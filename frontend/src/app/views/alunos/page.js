@@ -166,6 +166,7 @@ export default function AlunosPage() {
             <option value="1º Ano Médio">1º Ano Médio</option>
             <option value="2º Ano Médio">2º Ano Médio</option>
             <option value="3º Ano Médio">3º Ano Médio</option>
+            <option value="Ensino Medio Completo">Ensino Medio Completo</option>
           </SelectField>
         </div>
 
@@ -188,7 +189,7 @@ export default function AlunosPage() {
         {/* COLUNA 03: AÇÕES DE ENVIO */}
         <div className="bg-yellow-400 p-8 border-4 border-zinc-900 shadow-[8px_8px_0px_0px_rgba(24,24,27,1)] flex flex-col justify-between">
           <div>
-            <h2 className="font-black text-2xl uppercase mb-4 italic italic">Ready to fly?</h2>
+            <h2 className="font-black text-2xl uppercase mb-4 italic">Ready to fly?</h2>
             <p className="font-bold text-zinc-900 text-sm leading-tight border-l-4 border-zinc-900 pl-4">
               Revise a matrícula e o CPF. Na FlyHigh, a precisão dos dados é o primeiro passo para o sucesso do aluno.
             </p>
@@ -231,13 +232,15 @@ export default function AlunosPage() {
 
         {/* CORPO TABELA */}
         <div className="overflow-x-auto p-4">
-          <table className="w-full text-left min-w-[1000px]">
+          <table className="w-full text-left min-w-[1400px]">
             <thead>
               <tr className="border-b-4 border-zinc-900 bg-gray-50">
-                <th className="p-4 font-black uppercase text-[10px] tracking-widest text-zinc-500">ID/Matrícula</th>
-                <th className="p-4 font-black uppercase text-[10px] tracking-widest text-zinc-900">Nome Completo</th>
+                <th className="p-4 font-black uppercase text-[10px] tracking-widest text-zinc-500">Matrícula</th>
+                <th className="p-4 font-black uppercase text-[10px] tracking-widest text-zinc-900">Nome do Aluno</th>
+                <th className="p-4 font-black uppercase text-[10px] tracking-widest text-zinc-900">Documentos</th>
                 <th className="p-4 font-black uppercase text-[10px] tracking-widest text-zinc-900">Nascimento</th>
                 <th className="p-4 font-black uppercase text-[10px] tracking-widest text-zinc-900">Ano Escolar</th>
+                <th className="p-4 font-black uppercase text-[10px] tracking-widest text-zinc-900">Endereço Completo</th>
                 <th className="p-4 font-black uppercase text-[10px] tracking-widest text-zinc-900">Contatos</th>
                 <th className="p-4 font-black uppercase text-[10px] tracking-widest text-zinc-900 text-center">Gestão</th>
               </tr>
@@ -245,7 +248,7 @@ export default function AlunosPage() {
             <tbody className="font-bold text-sm">
               {loading && (
                 <tr>
-                  <td colSpan="6" className="p-10 text-center uppercase italic font-black text-zinc-400 animate-pulse">
+                  <td colSpan="8" className="p-10 text-center uppercase italic font-black text-zinc-400 animate-pulse">
                     Connecting to FlyHigh Database...
                   </td>
                 </tr>
@@ -258,21 +261,44 @@ export default function AlunosPage() {
                       #{aluno.numeroMatricula}
                     </span>
                   </td>
+                  
                   <td className="p-4 whitespace-nowrap">
-                    <div className="flex flex-col">
-                      <span className="uppercase text-zinc-900">{aluno.nome}</span>
-                      <span className="text-[10px] text-zinc-400 font-mono italic">CPF: {aluno.cpf}</span>
+                    <span className="uppercase text-zinc-900">{aluno.nome}</span>
+                  </td>
+
+                  <td className="p-4 whitespace-nowrap">
+                    <div className="flex flex-col gap-1 text-[11px] font-mono">
+                      <span className="text-zinc-600">CPF: {aluno.cpf || '---'}</span>
+                      <span className="text-zinc-400">RG: {aluno.rg || '---'}</span>
                     </div>
                   </td>
-                  <td className="p-4 text-zinc-600">
-                    {aluno.dataNascimento ? new Date(aluno.dataNascimento).toLocaleDateString('pt-BR') : '---'}
+
+                  <td className="p-4 text-zinc-600 whitespace-nowrap">
+                    {aluno.dataNascimento ? new Date(aluno.dataNascimento).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : '---'}
                   </td>
-                  <td className="p-4">
+                  
+                  <td className="p-4 whitespace-nowrap">
                     <span className="border-2 border-zinc-900 px-3 py-1 text-[10px] uppercase font-black bg-white shadow-[2px_2px_0px_0px_rgba(24,24,27,1)]">
                       {aluno.anoEscolar || '---'}
                     </span>
                   </td>
-                  <td className="p-4 text-[11px]">
+
+                  <td className="p-4 text-[11px] text-zinc-600 max-w-[300px] truncate" title={`${aluno.endereco?.logradouro || '---'}, ${aluno.endereco?.numero || 'S/N'} - ${aluno.endereco?.bairro || '---'}, ${aluno.endereco?.cidade || '---'} - CEP: ${aluno.endereco?.cep || '---'}`}>
+                    {aluno.endereco ? (
+                      <div className="flex flex-col">
+                        <span className="uppercase text-zinc-900 font-bold truncate">
+                          {aluno.endereco.logradouro}, {aluno.endereco.numero || 'S/N'}
+                        </span>
+                        <span className="text-zinc-500 truncate">
+                          {aluno.endereco.bairro} - {aluno.endereco.cidade} | CEP: {aluno.endereco.cep}
+                        </span>
+                      </div>
+                    ) : (
+                      'Endereço não cadastrado'
+                    )}
+                  </td>
+
+                  <td className="p-4 text-[11px] whitespace-nowrap">
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center gap-2 font-mono">
                         <span className="bg-emerald-100 text-emerald-700 px-1 font-black text-[9px]">PRI</span>
@@ -286,6 +312,7 @@ export default function AlunosPage() {
                       )}
                     </div>
                   </td>
+
                   <td className="p-4">
                     <div className="flex justify-center gap-2">
                       <button 
@@ -306,7 +333,7 @@ export default function AlunosPage() {
               ))}
 
               {!loading && !error && alunosFiltrados.length === 0 && (
-                 <tr><td colSpan="6" className="p-8 text-center text-zinc-400 uppercase font-black italic">Nenhum registro encontrado.</td></tr>
+                 <tr><td colSpan="8" className="p-8 text-center text-zinc-400 uppercase font-black italic">Nenhum registro encontrado.</td></tr>
               )}
             </tbody>
           </table>

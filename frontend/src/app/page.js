@@ -21,17 +21,21 @@ export default function Home() {
           <p className="text-zinc-500 mt-1 font-medium italic">O que você deseja gerenciar hoje?</p>
         </header>   
 
-        {/* Menu Principal (Cards Estilo Neo-Brutalismo) */}
-        <section className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-          <Link href="/views/alunos" className="group">
-            <div className="bg-zinc-900 p-10 rounded-sm hover:translate-x-2 hover:-translate-y-2 transition-all duration-300 relative">
+        {/* Menu Principal */}
+        <section className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+          
+          {/* Card 01: Alunos */}
+          <Link href="/views/alunos" className="group h-full">
+            <div className="bg-zinc-900 p-10 rounded-sm hover:translate-x-2 hover:-translate-y-2 transition-all duration-300 relative h-full">
               <div className="absolute inset-0 bg-yellow-400 translate-x-0 translate-y-0 group-hover:translate-x-4 group-hover:translate-y-4 -z-10 transition-all"></div>
               
-              <div className="flex justify-between items-start">
-                <div>
-                  <div className="text-4xl mb-6">🎓</div>
-                  <h3 className="text-3xl font-black text-white mb-3 uppercase tracking-tighter">Gestão de Alunos</h3>
-                  <p className="text-zinc-400 font-medium max-w-xs">
+              <div className="flex justify-between items-start h-full">
+                <div className="flex flex-col justify-between h-full">
+                  <div>
+                    <div className="text-4xl mb-6">🎓</div>
+                    <h3 className="text-3xl font-black text-white mb-3 uppercase tracking-tighter">Gestão de Alunos</h3>
+                  </div>
+                  <p className="text-zinc-400 font-medium max-w-xs mt-4">
                     Gerencie dados de contato e endereços dos alunos.
                   </p>
                 </div>
@@ -40,22 +44,47 @@ export default function Home() {
             </div>
           </Link>
 
-          <Link href="/views/responsaveis" className="group">
-            <div className="bg-white border-4 border-zinc-900 p-10 rounded-sm hover:translate-x-2 hover:-translate-y-2 transition-all duration-300 relative">
+          {/* Card 02: Responsáveis */}
+          <Link href="/views/responsaveis" className="group h-full">
+            <div className="bg-white border-4 border-zinc-900 p-10 rounded-sm hover:translate-x-2 hover:-translate-y-2 transition-all duration-300 relative h-full">
               <div className="absolute inset-0 bg-zinc-200 translate-x-0 translate-y-0 group-hover:translate-x-4 group-hover:translate-y-4 -z-10 transition-all"></div>
               
-              <div className="flex justify-between items-start">
-                <div>
-                  <div className="text-4xl mb-6">👥</div>
-                  <h3 className="text-3xl font-black text-zinc-900 mb-3 uppercase tracking-tighter">Responsáveis</h3>
-                  <p className="text-zinc-500 font-medium max-w-xs">
-                    Gerencie dados de contato e endereços dos pais ou tutores legais dos alunos.
+              <div className="flex justify-between items-start h-full">
+                <div className="flex flex-col justify-between h-full">
+                  <div>
+                    <div className="text-4xl mb-6">👥</div>
+                    <h3 className="text-3xl font-black text-zinc-900 mb-3 uppercase tracking-tighter">Responsáveis</h3>
+                  </div>
+                  <p className="text-zinc-500 font-medium max-w-xs mt-4">
+                    Gerencie dados de contato e endereços dos pais ou tutores legais.
                   </p>
                 </div>
                 <span className="text-zinc-900 text-4xl group-hover:translate-x-2 transition-transform">&rarr;</span>
               </div>
             </div>
           </Link>
+
+          {/* Card 03: Cursos */}
+          <Link href="/views/cursos" className="group h-full">
+            <div className="bg-yellow-400 border-4 border-zinc-900 p-10 rounded-sm hover:translate-x-2 hover:-translate-y-2 transition-all duration-300 relative h-full">
+              {/* Sombra alterada para branco com borda preta para não atrapalhar a leitura */}
+              <div className="absolute inset-0 bg-white border-4 border-zinc-900 translate-x-0 translate-y-0 group-hover:translate-x-4 group-hover:translate-y-4 -z-10 transition-all"></div>
+              
+              <div className="flex justify-between items-start h-full">
+                <div className="flex flex-col justify-between h-full">
+                  <div>
+                    <div className="text-4xl mb-6">📚</div>
+                    <h3 className="text-3xl font-black text-zinc-900 mb-3 uppercase tracking-tighter">Níveis & Cursos</h3>
+                  </div>
+                  <p className="text-zinc-800 font-medium max-w-xs mt-4">
+                    Gerencie os níveis de ensino, cargas horárias e valores.
+                  </p>
+                </div>
+                <span className="text-zinc-900 text-4xl group-hover:translate-x-2 transition-transform">&rarr;</span>
+              </div>
+            </div>
+          </Link>
+
         </section>
 
         {/* Footer/Aviso */}

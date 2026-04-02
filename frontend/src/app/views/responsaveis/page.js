@@ -142,7 +142,7 @@ export default function ResponsaveisPage() {
             <InputField label="Tel. Reserva" name="telefoneSecundario" onChange={handleChange} value={formData.telefoneSecundario} />
           </div>
           <div className="grid grid-cols-3 gap-4">
-            <InputField label="CEP" name="cep" onChange={handleChange} value={formData.cep} />
+            <InputField label="CEP" name="cep" placeholder="00000-000" onChange={handleChange} value={formData.cep} />
             <InputField label="Nº" name="numero" onChange={handleChange} value={formData.numero} />
             <InputField label="Bairro" name="bairro" onChange={handleChange} value={formData.bairro} />
           </div>
@@ -196,20 +196,22 @@ export default function ResponsaveisPage() {
 
         {/* CORPO TABELA */}
         <div className="overflow-x-auto p-4">
-          <table className="w-full text-left">
+          <table className="w-full text-left min-w-[1400px]">
             <thead>
               <tr className="border-b-4 border-zinc-900 bg-gray-50">
+                <th className="p-4 font-black uppercase text-[10px] tracking-widest text-zinc-500">ID</th>
                 <th className="p-4 font-black uppercase text-[10px] tracking-widest text-zinc-900">Nome do Responsável</th>
-                <th className="p-4 font-black uppercase text-[10px] tracking-widest text-zinc-900">CPF</th>
-                <th className="p-4 font-black uppercase text-[10px] tracking-widest text-zinc-900">Contato</th>
-                <th className="p-4 font-black uppercase text-[10px] tracking-widest text-zinc-900">Cidade</th>
+                <th className="p-4 font-black uppercase text-[10px] tracking-widest text-zinc-900">Documentos</th>
+                <th className="p-4 font-black uppercase text-[10px] tracking-widest text-zinc-900">Nascimento</th>
+                <th className="p-4 font-black uppercase text-[10px] tracking-widest text-zinc-900">Endereço Completo</th>
+                <th className="p-4 font-black uppercase text-[10px] tracking-widest text-zinc-900">Contatos</th>
                 <th className="p-4 font-black uppercase text-[10px] tracking-widest text-zinc-900 text-center">Gestão</th>
               </tr>
             </thead>
             <tbody className="font-bold text-sm">
               {loading && (
                 <tr>
-                  <td colSpan="5" className="p-10 text-center uppercase italic font-black text-zinc-400 animate-pulse">
+                  <td colSpan="7" className="p-10 text-center uppercase italic font-black text-zinc-400 animate-pulse">
                     Loading Database...
                   </td>
                 </tr>
@@ -217,14 +219,57 @@ export default function ResponsaveisPage() {
               
               {!loading && responsaveisFiltrados.map(resp => (
                 <tr key={resp.id_responsavel} className="border-b-2 border-zinc-100 hover:bg-yellow-50 transition-colors group">
-                  <td className="p-4 uppercase text-zinc-900">{resp.nome}</td>
-                  <td className="p-4 font-mono text-zinc-600">{resp.cpf}</td>
-                  <td className="p-4 text-zinc-600 font-mono text-xs">{resp.telefonePrincipal || '---'}</td>
                   <td className="p-4">
-                    <span className="bg-zinc-100 px-2 py-1 text-[10px] uppercase border border-zinc-900 shadow-[2px_2px_0px_0px_rgba(24,24,27,1)]">
-                      {resp.endereco?.cidade || 'N/A'}
+                    <span className="bg-zinc-900 text-white px-2 py-1 text-xs font-mono group-hover:bg-yellow-400 group-hover:text-zinc-900 transition-colors">
+                      #{String(resp.id_responsavel).padStart(3, '0')}
                     </span>
                   </td>
+
+                  <td className="p-4 whitespace-nowrap">
+                    <span className="uppercase text-zinc-900">{resp.nome}</span>
+                  </td>
+
+                  <td className="p-4 whitespace-nowrap">
+                    <div className="flex flex-col gap-1 text-[11px] font-mono">
+                      <span className="text-zinc-600">CPF: {resp.cpf || '---'}</span>
+                      <span className="text-zinc-400">RG: {resp.rg || '---'}</span>
+                    </div>
+                  </td>
+
+                  <td className="p-4 text-zinc-600 whitespace-nowrap">
+                    {resp.dataNascimento ? new Date(resp.dataNascimento).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : '---'}
+                  </td>
+
+                  <td className="p-4 text-[11px] text-zinc-600 max-w-[300px] truncate" title={`${resp.endereco?.logradouro || '---'}, ${resp.endereco?.numero || 'S/N'} - ${resp.endereco?.bairro || '---'}, ${resp.endereco?.cidade || '---'} - CEP: ${resp.endereco?.cep || '---'}`}>
+                    {resp.endereco ? (
+                      <div className="flex flex-col">
+                        <span className="uppercase text-zinc-900 font-bold truncate">
+                          {resp.endereco.logradouro}, {resp.endereco.numero || 'S/N'}
+                        </span>
+                        <span className="text-zinc-500 truncate">
+                          {resp.endereco.bairro} - {resp.endereco.cidade} | CEP: {resp.endereco.cep}
+                        </span>
+                      </div>
+                    ) : (
+                      'Endereço não cadastrado'
+                    )}
+                  </td>
+
+                  <td className="p-4 text-[11px] whitespace-nowrap">
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-2 font-mono">
+                        <span className="bg-emerald-100 text-emerald-700 px-1 font-black text-[9px]">PRI</span>
+                        {resp.telefonePrincipal || '(---)'}
+                      </div>
+                      {resp.telefoneSecundario && (
+                        <div className="flex items-center gap-2 font-mono">
+                          <span className="bg-zinc-100 text-zinc-500 px-1 font-black text-[9px]">SEC</span>
+                          {resp.telefoneSecundario}
+                        </div>
+                      )}
+                    </div>
+                  </td>
+
                   <td className="p-4">
                     <div className="flex justify-center gap-2">
                       <button 
@@ -235,7 +280,7 @@ export default function ResponsaveisPage() {
                       </button>
                       <button 
                         onClick={() => handleExcluir(resp.id_responsavel)} 
-                        className="bg-white text-zinc-900 w-9 h-9 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all border-2 border-zinc-900 shadow-[2px_2px_0px_0px_rgba(24,24,27,1)]"
+                        className="bg-white text-zinc-900 w-9 h-9 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all border-2 border-zinc-900 shadow-[2px_2px_0px_0px_rgba(24,24,27,1)] active:shadow-none"
                       >
                         🗑
                       </button>
@@ -243,6 +288,10 @@ export default function ResponsaveisPage() {
                   </td>
                 </tr>
               ))}
+
+              {!loading && responsaveisFiltrados.length === 0 && (
+                 <tr><td colSpan="7" className="p-8 text-center text-zinc-400 uppercase font-black italic">Nenhum registro encontrado.</td></tr>
+              )}
             </tbody>
           </table>
         </div>

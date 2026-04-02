@@ -168,6 +168,7 @@ export default function EditarAlunoPage() {
             <option value="1º Ano Médio">1º Ano Médio</option>
             <option value="2º Ano Médio">2º Ano Médio</option>
             <option value="3º Ano Médio">3º Ano Médio</option>
+            <option value="Ensino Medio Completo">Ensino Medio Completo</option>
           </SelectField>
         </div>
 
