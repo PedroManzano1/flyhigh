@@ -118,7 +118,7 @@ export default function EditarAlunoPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-100">
-        <span className="font-black uppercase tracking-widest animate-pulse">Loading Student Data...</span>
+        <span className="font-black uppercase tracking-widest animate-pulse">Carregando Dados do Estudante...</span>
       </div>
     );
   }
@@ -191,7 +191,7 @@ export default function EditarAlunoPage() {
         {/* COLUNA 03: CONFIRMAÇÃO */}
         <div className="bg-yellow-400 p-8 border-4 border-zinc-900 shadow-[8px_8px_0px_0px_rgba(24,24,27,1)] flex flex-col justify-between">
           <div>
-            <h2 className="font-black text-2xl uppercase mb-4 italic italic">Update database?</h2>
+            <h2 className="font-black text-2xl uppercase mb-4 italic italic">Update?</h2>
             <p className="font-bold text-zinc-900 text-sm leading-tight border-l-4 border-zinc-900 pl-4">
               Você está prestes a sobrescrever as informações deste aluno. Certifique-se de que os novos dados foram validados pela secretaria.
             </p>

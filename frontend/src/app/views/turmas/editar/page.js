@@ -97,7 +97,7 @@ export default function EditarTurmaPage() {
     }
   };
 
-  if (loading) return <div className="flex items-center justify-center min-h-screen bg-gray-100"><span className="font-black uppercase tracking-widest animate-pulse">Loading Flight Data...</span></div>;
+  if (loading) return <div className="flex items-center justify-center min-h-screen bg-gray-100"><span className="font-black uppercase tracking-widest animate-pulse">Carregando Dados da Turma...</span></div>;
 
   return (
     <div className="p-10 bg-gray-100 min-h-screen text-zinc-900 font-sans">

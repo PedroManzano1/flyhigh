@@ -100,7 +100,7 @@ export default function EditarResponsavelPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-100">
-        <span className="font-black uppercase tracking-widest animate-pulse">Loading Guardian Data...</span>
+        <span className="font-black uppercase tracking-widest animate-pulse">Carregando Dados do Responsavel...</span>
       </div>
     );
   }
