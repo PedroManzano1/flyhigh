@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../../utils/api';
 import { useRouter } from 'next/navigation'; 
 
 const InputField = ({ label, name, placeholder, type = "text", onChange, value, className = "" }) => (
@@ -43,7 +43,7 @@ export default function AlunosPage() {
   const carregarAlunos = async () => {
     setLoading(true);
     try {
-      const res = await axios.get('http://localhost:8080/api/alunos');
+      const res = await api.get('/api/alunos');
       setAlunos(res.data);
       setError(null);
     } catch (err) {
@@ -66,7 +66,7 @@ export default function AlunosPage() {
     };
 
     try {
-      await axios.post('http://localhost:8080/api/alunos', payload);
+      await api.post('/api/alunos', payload);
       alert("Aluno salvo com sucesso!");
       carregarAlunos(); setFormData(estadoInicial);
     } catch (err) { 
@@ -77,7 +77,7 @@ export default function AlunosPage() {
   const handleExcluir = async (id) => {
     if (window.confirm("Atenção! Deseja excluir este registro permanentemente?")) {
       try {
-        await axios.delete(`http://localhost:8080/api/alunos/${id}`);
+        await api.delete(`/api/alunos/${id}`);
         alert("Registro removido."); carregarAlunos(); 
       } catch (err) { alert("Erro ao excluir. Verifique a conexão."); }
     }

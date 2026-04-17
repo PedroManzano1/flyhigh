@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../../../utils/api';
 import { useRouter, useSearchParams } from 'next/navigation'; 
 
 // --- COMPONENTES UTILITÁRIOS (ESTILO FLYHIGH) ---
@@ -52,7 +52,7 @@ export default function EditarAlunoPage() {
 
     const carregarAluno = async () => {
       try {
-        const res = await axios.get(`http://localhost:8080/api/alunos/${id}`);
+        const res = await api.get(`/api/alunos/${id}`);
         const aluno = res.data;
         
         setFormData({
@@ -106,7 +106,7 @@ export default function EditarAlunoPage() {
     };
 
     try {
-      await axios.put(`http://localhost:8080/api/alunos/editar/${id}`, payload);
+      await api.put(`/api/alunos/editar/${id}`, payload);
       alert("Dados atualizados com sucesso!");
       router.push('/views/alunos'); 
     } catch (err) {

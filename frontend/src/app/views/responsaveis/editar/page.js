@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../../../utils/api';
 import { useRouter, useSearchParams } from 'next/navigation'; 
 
 // --- COMPONENTES UTILITÁRIOS (ESTILO FLYHIGH) ---
@@ -38,7 +38,7 @@ export default function EditarResponsavelPage() {
 
     const carregarResponsavel = async () => {
       try {
-        const res = await axios.get(`http://localhost:8080/api/responsaveis/${id}`);
+        const res = await api.get(`/api/responsaveis/${id}`);
         const resp = res.data;
         
         setFormData({
@@ -88,7 +88,7 @@ export default function EditarResponsavelPage() {
     };
 
     try {
-      await axios.put(`http://localhost:8080/api/responsaveis/editar/${id}`, payload);
+      await api.put(`/api/responsaveis/editar/${id}`, payload);
       alert("Responsável atualizado com sucesso!");
       router.push('/views/responsaveis'); 
     } catch (err) {
@@ -107,7 +107,6 @@ export default function EditarResponsavelPage() {
 
   return (
     <div className="p-10 bg-gray-100 min-h-screen text-zinc-900 font-sans">
-      {/* HEADER NAVEGAÇÃO */}
       <header className="mb-12 flex flex-col gap-4">
         <button 
           onClick={() => router.push('/views/responsaveis')} 
@@ -121,10 +120,7 @@ export default function EditarResponsavelPage() {
         </div>
       </header>
       
-      {/* FORMULÁRIO DE EDIÇÃO */}
       <form onSubmit={handleSubmit} className="grid grid-cols-1 xl:grid-cols-3 gap-10 mb-12">
-        
-        {/* COLUNA 01: DADOS PESSOAIS */}
         <div className="bg-white p-8 border-4 border-zinc-900 shadow-[8px_8px_0px_0px_rgba(250,204,21,1)] space-y-6">
           <h2 className="font-black text-lg uppercase border-b-4 border-yellow-400 pb-2 mb-4">01. Identificação</h2>
           <InputField label="Nome Completo" name="nome" onChange={handleChange} value={formData.nome} />
@@ -135,7 +131,6 @@ export default function EditarResponsavelPage() {
           <InputField label="RG" name="rg" onChange={handleChange} value={formData.rg} />
         </div>
 
-        {/* COLUNA 02: LOCALIZAÇÃO E CONTATO */}
         <div className="bg-white p-8 border-4 border-zinc-900 shadow-[8px_8px_0px_0px_rgba(24,24,27,1)] space-y-6">
           <h2 className="font-black text-lg uppercase border-b-4 border-yellow-400 pb-2 mb-4">02. Contato & Endereço</h2>
           <div className="grid grid-cols-2 gap-4">
@@ -151,7 +146,6 @@ export default function EditarResponsavelPage() {
           <InputField label="Cidade" name="cidade" onChange={handleChange} value={formData.cidade} />
         </div>
 
-        {/* COLUNA 03: CONFIRMAÇÃO */}
         <div className="bg-yellow-400 p-8 border-4 border-zinc-900 shadow-[8px_8px_0px_0px_rgba(24,24,27,1)] flex flex-col justify-between">
           <div>
             <h2 className="font-black text-2xl uppercase mb-4 italic">Confirm Changes</h2>

@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../../../utils/api';
 import { useRouter, useSearchParams } from 'next/navigation'; 
 
 const InputField = ({ label, name, placeholder, type = "text", onChange, value, className = "" }) => (
@@ -39,8 +39,8 @@ export default function EditarTurmaPage() {
     const carregarDados = async () => {
       try {
         const [resTurma, resCursos] = await Promise.all([
-          axios.get(`http://localhost:8080/api/turmas/${id}`),
-          axios.get('http://localhost:8080/api/cursos')
+          api.get(`/api/turmas/${id}`),
+          api.get('/api/cursos')
         ]);
         
         const turma = resTurma.data;
@@ -88,7 +88,7 @@ export default function EditarTurmaPage() {
     };
 
     try {
-      await axios.put(`http://localhost:8080/api/turmas/editar/${id}`, payload);
+      await api.put(`/api/turmas/editar/${id}`, payload);
       alert("Turma atualizada com sucesso!");
       router.push('/views/turmas'); 
     } catch (err) {

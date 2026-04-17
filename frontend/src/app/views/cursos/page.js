@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../../utils/api';
 import { useRouter } from 'next/navigation'; 
 
 const InputField = ({ label, name, placeholder, type = "text", onChange, value, className = "" }) => (
@@ -38,7 +38,7 @@ export default function CursosPage() {
   const carregarCursos = async () => {
     setLoading(true);
     try {
-      const res = await axios.get('http://localhost:8080/api/cursos');
+      const res = await api.get('/api/cursos');
       setCursos(res.data);
       setError(null);
     } catch (err) {
@@ -61,7 +61,7 @@ export default function CursosPage() {
     };
 
     try {
-      await axios.post('http://localhost:8080/api/cursos', payload);
+      await api.post('/api/cursos', payload);
       alert("Curso salvo com sucesso!");
       carregarCursos(); setFormData(estadoInicial);
     } catch (err) { 
@@ -72,7 +72,7 @@ export default function CursosPage() {
   const handleExcluir = async (id) => {
     if (window.confirm("Atenção! Deseja excluir este curso permanentemente?")) {
       try {
-        await axios.delete(`http://localhost:8080/api/cursos/${id}`);
+        await api.delete(`/api/cursos/${id}`);
         alert("Curso removido."); carregarCursos(); 
       } catch (err) { alert("Erro ao excluir. Verifique a conexão."); }
     }

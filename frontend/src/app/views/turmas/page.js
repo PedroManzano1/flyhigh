@@ -1,12 +1,11 @@
 "use client";
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../../utils/api';
 import { useRouter } from 'next/navigation'; 
 
 // --- COMPONENTES UTILITÁRIOS (ESTILO FLYHIGH) ---
 const InputField = ({ label, name, placeholder, type = "text", onChange, value, className = "" }) => (
   <div className={className}>
-    {/* Cor da label alterada de zinc-500 para zinc-800 */}
     <label className="block text-xs font-black text-zinc-800 uppercase tracking-widest mb-1">{label}</label>
     <input
       type={type} 
@@ -19,9 +18,8 @@ const InputField = ({ label, name, placeholder, type = "text", onChange, value, 
   </div>
 );
 
-const SelectField = ({ label, name, children, onChange, value }) => (
-  <div>
-    {/* Cor da label alterada de zinc-500 para zinc-800 */}
+const SelectField = ({ label, name, children, onChange, value, className = "" }) => (
+  <div className={className}>
     <label className="block text-xs font-black text-zinc-800 uppercase tracking-widest mb-1">{label}</label>
     <select
       name={name} 
@@ -53,8 +51,8 @@ export default function TurmasPage() {
     setLoading(true);
     try {
       const [resTurmas, resCursos] = await Promise.all([
-        axios.get('http://localhost:8080/api/turmas'),
-        axios.get('http://localhost:8080/api/cursos')
+        api.get('/api/turmas'),
+        api.get('/api/cursos')
       ]);
       setTurmas(resTurmas.data);
       setCursos(resCursos.data);
@@ -87,7 +85,7 @@ export default function TurmasPage() {
     };
 
     try {
-      await axios.post('http://localhost:8080/api/turmas', payload);
+      await api.post('/api/turmas', payload);
       alert("Turma salva com sucesso!");
       carregarDados();
       setFormData(estadoInicial);
@@ -100,7 +98,7 @@ export default function TurmasPage() {
   const handleExcluir = async (id) => {
     if (window.confirm("Atenção! Deseja excluir esta turma permanentemente?")) {
       try {
-        await axios.delete(`http://localhost:8080/api/turmas/${id}`);
+        await api.delete(`/api/turmas/${id}`);
         alert("Turma removida.");
         carregarDados(); 
       } catch (err) {
@@ -117,7 +115,6 @@ export default function TurmasPage() {
 
   return (
     <div className="p-10 bg-gray-100 min-h-screen text-zinc-900 font-sans">
-      {/* HEADER NAVEGAÇÃO */}
       <header className="mb-12 flex items-center justify-between">
         <div>
           <h1 className="text-4xl font-black uppercase tracking-tighter italic">Gerenciar Turmas</h1>
@@ -132,10 +129,7 @@ export default function TurmasPage() {
         </button>
       </header>
       
-      {/* FORMULÁRIO DE CADASTRO */}
       <form onSubmit={handleSubmit} className="grid grid-cols-1 xl:grid-cols-3 gap-10 mb-16">
-        
-        {/* COLUNA 01: IDENTIFICAÇÃO */}
         <div className="bg-white p-8 border-4 border-zinc-900 shadow-[8px_8px_0px_0px_rgba(250,204,21,1)] space-y-6">
           <h2 className="font-black text-lg uppercase border-b-4 border-yellow-400 pb-2 mb-4">01. Identificação</h2>
           
@@ -151,7 +145,6 @@ export default function TurmasPage() {
           <InputField label="Semestre/Ano" name="semestreAno" placeholder="Ex: 2026.1" onChange={handleChange} value={formData.semestreAno} />
         </div>
 
-        {/* COLUNA 02: ESCALA */}
         <div className="bg-white p-8 border-4 border-zinc-900 shadow-[8px_8px_0px_0px_rgba(24,24,27,1)] space-y-6">
           <h2 className="font-black text-lg uppercase border-b-4 border-yellow-400 pb-2 mb-4">02. Escala & Vagas</h2>
           
@@ -165,7 +158,6 @@ export default function TurmasPage() {
           <InputField label="Limite de Vagas" name="limiteVagas" type="number" placeholder="Ex: 15" onChange={handleChange} value={formData.limiteVagas} />
         </div>
 
-        {/* COLUNA 03: STATUS E PROFESSOR */}
         <div className="bg-zinc-200 p-8 border-4 border-zinc-900 shadow-[8px_8px_0px_0px_rgba(24,24,27,1)] flex flex-col justify-between">
           <div className="space-y-6">
             <h2 className="font-black text-lg uppercase border-b-4 border-zinc-900 pb-2 mb-4">03. Operação</h2>
@@ -190,7 +182,6 @@ export default function TurmasPage() {
         </div>
       </form>
       
-      {/* LISTAGEM DE TURMAS */}
       <section className="bg-white border-4 border-zinc-900 shadow-[12px_12px_0px_0px_rgba(24,24,27,1)] overflow-hidden">
         <div className="bg-zinc-900 p-6 flex justify-between items-center flex-wrap gap-4">
           <h2 className="font-black text-xl text-white uppercase tracking-tighter italic underline decoration-yellow-400 underline-offset-8">
@@ -211,7 +202,6 @@ export default function TurmasPage() {
           <table className="w-full text-left min-w-[1000px]">
             <thead>
               <tr className="border-b-4 border-zinc-900 bg-gray-50">
-                {/* Headers agora com text-zinc-700 para maior destaque */}
                 <th className="p-4 font-black uppercase text-xs tracking-widest text-zinc-700">Código</th>
                 <th className="p-4 font-black uppercase text-xs tracking-widest text-zinc-900">Curso</th>
                 <th className="p-4 font-black uppercase text-xs tracking-widest text-zinc-900">Dias / Horário</th>
@@ -229,7 +219,6 @@ export default function TurmasPage() {
                     <span className="bg-zinc-900 text-white px-3 py-1.5 text-sm font-mono group-hover:bg-yellow-400 group-hover:text-zinc-900 transition-colors">
                       {turma.codigoTurma}
                     </span>
-                    {/* Alterado para text-zinc-700 e font-bold */}
                     <div className="text-xs text-zinc-700 font-bold font-mono italic mt-2">SEM: {turma.semestreAno}</div>
                   </td>
                   <td className="p-4 text-zinc-900 uppercase">
@@ -237,7 +226,6 @@ export default function TurmasPage() {
                   </td>
                   <td className="p-4">
                     <div className="uppercase text-zinc-900 mb-1">{turma.diasSemana}</div>
-                    {/* Alterado para text-zinc-700 e font-bold */}
                     <div className="text-xs text-zinc-700 font-bold font-mono">{turma.horarioInicio} - {turma.horarioFim}</div>
                   </td>
                   <td className="p-4 font-mono text-zinc-900">

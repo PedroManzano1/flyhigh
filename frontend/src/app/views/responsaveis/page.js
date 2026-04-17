@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../../utils/api';
 import { useRouter } from 'next/navigation'; 
 
 // --- COMPONENTES UTILITÁRIOS (ESTILO FLYHIGH) ---
@@ -61,9 +61,9 @@ export default function ResponsaveisPage() {
     setLoading(true);
     try {
       const [resResp, resAlunos, resVinculos] = await Promise.all([
-        axios.get('http://localhost:8080/api/responsaveis'),
-        axios.get('http://localhost:8080/api/alunos'),
-        axios.get('http://localhost:8080/api/vinculos')
+        api.get('/api/responsaveis'),
+        api.get('/api/alunos'),
+        api.get('/api/vinculos')
       ]);
       setResponsaveis(resResp.data);
       setAlunos(resAlunos.data);
@@ -92,7 +92,7 @@ export default function ResponsaveisPage() {
     };
 
     try {
-      await axios.post('http://localhost:8080/api/responsaveis', payload);
+      await api.post('/api/responsaveis', payload);
       alert("Responsável salvo com sucesso!");
       carregarDados();
       setFormData(estadoInicialResp);
@@ -117,7 +117,7 @@ export default function ResponsaveisPage() {
     };
 
     try {
-      await axios.post('http://localhost:8080/api/vinculos', payload);
+      await api.post('/api/vinculos', payload);
       alert("Vínculo acadêmico criado com sucesso!");
       carregarDados();
       setVinculoData(estadoInicialVinculo);
@@ -130,7 +130,7 @@ export default function ResponsaveisPage() {
   const handleExcluir = async (id) => {
     if (window.confirm("Atenção! Deseja excluir este responsável? Todos os vínculos associados a ele também serão excluídos.")) {
       try {
-        await axios.delete(`http://localhost:8080/api/responsaveis/${id}`);
+        await api.delete(`/api/responsaveis/${id}`);
         alert("Registro removido.");
         carregarDados(); 
       } catch (err) {
@@ -161,7 +161,6 @@ export default function ResponsaveisPage() {
       
       {/* 1. FORMULÁRIO DE CADASTRO DO RESPONSÁVEL */}
       <form onSubmit={handleSubmit} className="grid grid-cols-1 xl:grid-cols-3 gap-10 mb-10">
-        {/* COLUNA 01 */}
         <div className="bg-white p-8 border-4 border-zinc-900 shadow-[8px_8px_0px_0px_rgba(250,204,21,1)] space-y-6">
           <h2 className="font-black text-lg uppercase border-b-4 border-yellow-400 pb-2 mb-4">01. Dados Pessoais</h2>
           <InputField label="Nome do Responsável" name="nome" placeholder="Ex: Mary Smith" onChange={handleChange} value={formData.nome} />
@@ -172,7 +171,6 @@ export default function ResponsaveisPage() {
           <InputField label="RG" name="rg" placeholder="Identidade" onChange={handleChange} value={formData.rg} />
         </div>
 
-        {/* COLUNA 02 */}
         <div className="bg-white p-8 border-4 border-zinc-900 shadow-[8px_8px_0px_0px_rgba(24,24,27,1)] space-y-6">
           <h2 className="font-black text-lg uppercase border-b-4 border-yellow-400 pb-2 mb-4">02. Localização</h2>
           <div className="grid grid-cols-2 gap-4">
@@ -188,7 +186,6 @@ export default function ResponsaveisPage() {
           <InputField label="Cidade" name="cidade" onChange={handleChange} value={formData.cidade} />
         </div>
 
-        {/* COLUNA 03 */}
         <div className="bg-yellow-400 p-8 border-4 border-zinc-900 shadow-[8px_8px_0px_0px_rgba(24,24,27,1)] flex flex-col justify-between">
           <div>
             <h2 className="font-black text-2xl uppercase mb-4 italic">Security Check</h2>
@@ -288,7 +285,6 @@ export default function ResponsaveisPage() {
                     <span className="uppercase text-zinc-900">{resp.nome}</span>
                   </td>
 
-                  {/* NOVA COLUNA: ALUNOS VINCULADOS */}
                   <td className="p-4">
                     <div className="flex flex-col gap-2">
                       {vinculos.filter(v => v.responsavel?.id_responsavel === resp.id_responsavel).length === 0 ? (

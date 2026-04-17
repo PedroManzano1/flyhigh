@@ -4,6 +4,7 @@ import com.example.backend.model.Responsavel;
 import com.example.backend.service.ResponsavelService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,19 +17,19 @@ public class ResponsavelController {
     @Autowired
     private ResponsavelService service;
 
-    // POST - http://localhost:8080/api/responsaveis
+    @PreAuthorize("hasRole('DIRETOR') or hasAuthority('RESPONSAVEIS_WRITE')")
     @PostMapping
     public Responsavel create(@RequestBody Responsavel responsavel) {
         return service.salvar(responsavel);
     }
 
-    // GET ALL - http://localhost:8080/api/responsaveis
+    @PreAuthorize("hasRole('DIRETOR') or hasAuthority('RESPONSAVEIS_READ')")
     @GetMapping
     public List<Responsavel> getAll() {
         return service.listarTodos();
     }
 
-    // GET BY ID - http://localhost:8080/api/responsaveis/1
+    @PreAuthorize("hasRole('DIRETOR') or hasAuthority('RESPONSAVEIS_READ')")
     @GetMapping("/{id}")
     public ResponseEntity<Responsavel> getById(@PathVariable Long id) {
         return service.buscarPorId(id)
@@ -36,20 +37,19 @@ public class ResponsavelController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // PUT (Update) - http://localhost:8080/api/editar/responsaveis/1
+    @PreAuthorize("hasRole('DIRETOR') or hasAuthority('RESPONSAVEIS_WRITE')")
     @PutMapping("/editar/{id}")
     public ResponseEntity<Responsavel> update(@PathVariable Long id, @RequestBody Responsavel responsavel) {
         return service.buscarPorId(id).map(existente -> {
-            responsavel.setId_responsavel(id); // Garante que vai atualizar o registro correto
+            responsavel.setId_responsavel(id);
             return ResponseEntity.ok(service.salvar(responsavel));
         }).orElse(ResponseEntity.notFound().build());
     }
 
-    // DELETE - http://localhost:8080/api/responsaveis/1
+    @PreAuthorize("hasRole('DIRETOR') or hasAuthority('RESPONSAVEIS_DELETE')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
-        if (service.buscarPorId(id).isPresent())
-        {
+        if (service.buscarPorId(id).isPresent()) {
             service.excluir(id);
             return ResponseEntity.noContent().build();
         }
