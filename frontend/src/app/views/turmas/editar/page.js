@@ -26,6 +26,7 @@ export default function EditarTurmaPage() {
 
   const [loading, setLoading] = useState(true);
   const [cursos, setCursos] = useState([]);
+  const [usuarios, setUsuarios] = useState([]); // Novo estado para os usuários
   const [formData, setFormData] = useState({
     codigoTurma: '', id_curso: '', diasSemana: '', horarioInicio: '', horarioFim: '', limiteVagas: '', semestreAno: '', status: '', idProfessor: ''
   });
@@ -38,15 +39,17 @@ export default function EditarTurmaPage() {
 
     const carregarDados = async () => {
       try {
-        const [resTurma, resCursos] = await Promise.all([
+        // Adicionado a busca de usuários na Promise.all
+        const [resTurma, resCursos, resUsuarios] = await Promise.all([
           api.get(`/api/turmas/${id}`),
-          api.get('/api/cursos')
+          api.get('/api/cursos'),
+          api.get('/api/usuarios') // Assumindo que este é o seu endpoint
         ]);
         
         const turma = resTurma.data;
         setCursos(resCursos.data);
+        setUsuarios(resUsuarios.data);
 
-        // O LocalTime do Java geralmente vem como "HH:mm:ss", o input type="time" precisa de "HH:mm"
         const formatarHora = (horaStr) => horaStr ? horaStr.substring(0, 5) : '';
         
         setFormData({
@@ -58,7 +61,7 @@ export default function EditarTurmaPage() {
           limiteVagas: turma.limiteVagas || '',
           semestreAno: turma.semestreAno || '',
           status: turma.status || 'Aberta',
-          idProfessor: turma.idProfessor || ''
+          idProfessor: turma.professor ? String(turma.professor.idUsuario) : ''
         });
       } catch (err) {
         alert("Erro ao carregar dados.");
@@ -84,7 +87,7 @@ export default function EditarTurmaPage() {
       semestreAno: formData.semestreAno,
       status: formData.status,
       curso: formData.id_curso ? { id_curso: parseInt(formData.id_curso) } : null,
-      idProfessor: formData.idProfessor ? parseInt(formData.idProfessor) : null
+      professor: formData.idProfessor ? { idUsuario: parseInt(formData.idProfessor) } : null
     };
 
     try {
@@ -146,7 +149,17 @@ export default function EditarTurmaPage() {
               <option value="Em Andamento">🟡 Em Andamento</option>
               <option value="Fechada">🔴 Fechada</option>
             </SelectField>
-            <InputField label="ID Professor (Prov.)" name="idProfessor" type="number" onChange={handleChange} value={formData.idProfessor} />
+            
+            {/* Select de Professores inserido aqui */}
+            <SelectField label="Professor Responsável" name="idProfessor" onChange={handleChange} value={formData.idProfessor}>
+              <option value="">Selecione o Professor...</option>
+              {usuarios.map(u => (
+                <option key={u.idUsuario} value={u.idUsuario}>
+                  {u.nome} (ID: {u.idUsuario})
+                </option>
+              ))}
+            </SelectField>
+
           </div>
           <div className="flex flex-col gap-4 mt-10">
             <button type="submit" className="bg-zinc-900 text-yellow-400 p-4 font-black uppercase tracking-[0.2em] hover:bg-yellow-400 hover:text-zinc-900 transition-all border-2 border-zinc-900">

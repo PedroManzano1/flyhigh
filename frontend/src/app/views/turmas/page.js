@@ -24,6 +24,7 @@ export default function TurmasPage() {
 
   const [turmas, setTurmas] = useState([]);
   const [cursos, setCursos] = useState([]);
+  const [usuarios, setUsuarios] = useState([]); 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -39,11 +40,14 @@ export default function TurmasPage() {
   const carregarDados = async () => {
     setLoading(true);
     try {
-      const [resTurmas, resCursos] = await Promise.all([
-        api.get('/api/turmas'), api.get('/api/cursos')
+      const [resTurmas, resCursos, resUsuarios] = await Promise.all([
+        api.get('/api/turmas'), 
+        api.get('/api/cursos'),
+        api.get('/api/usuarios') 
       ]);
       setTurmas(resTurmas.data);
       setCursos(resCursos.data);
+      setUsuarios(resUsuarios.data);
       setError(null);
     } catch (err) { setError("Erro de conexão."); } finally { setLoading(false); }
   };
@@ -54,7 +58,13 @@ export default function TurmasPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const payload = { ...formData, limiteVagas: formData.limiteVagas ? parseInt(formData.limiteVagas) : 0, curso: formData.id_curso ? { id_curso: parseInt(formData.id_curso) } : null, idProfessor: formData.idProfessor ? parseInt(formData.idProfessor) : null };
+    const { id_curso, idProfessor, ...rest } = formData;
+    const payload = { 
+      ...rest, 
+      limiteVagas: rest.limiteVagas ? parseInt(rest.limiteVagas) : 0, 
+      curso: id_curso ? { id_curso: parseInt(id_curso) } : null, 
+      professor: idProfessor ? { idUsuario: parseInt(idProfessor) } : null 
+    };
     try {
       await api.post('/api/turmas', payload);
       alert("Turma salva com sucesso!");
@@ -115,7 +125,16 @@ export default function TurmasPage() {
                 <option value="Em Andamento">🟡 Em Andamento</option>
                 <option value="Fechada">🔴 Fechada</option>
               </SelectField>
-              <InputField label="ID Professor (Prov.)" name="idProfessor" type="number" placeholder="Ex: 1" onChange={handleChange} value={formData.idProfessor} />
+              
+              <SelectField label="Professor Responsável" name="idProfessor" onChange={handleChange} value={formData.idProfessor}>
+                <option value="">Selecione o Professor...</option>
+                {usuarios.map(u => (
+                  <option key={u.idUsuario} value={u.idUsuario}>
+                    {u.nome} (ID: {u.idUsuario})
+                  </option>
+                ))}
+              </SelectField>
+
             </div>
             <div className="flex flex-col gap-4 mt-10">
               <button type="submit" className="bg-yellow-400 text-zinc-900 p-4 font-black uppercase tracking-[0.2em] hover:bg-zinc-900 hover:text-white transition-all border-2 border-zinc-900">Abrir Turma</button>
@@ -139,6 +158,8 @@ export default function TurmasPage() {
               <tr className="border-b-4 border-zinc-900 bg-gray-50">
                 <th className="p-4 font-black uppercase text-xs tracking-widest text-zinc-700">Código</th>
                 <th className="p-4 font-black uppercase text-xs tracking-widest text-zinc-900">Curso</th>
+                {/* Nova coluna adicionada aqui */}
+                <th className="p-4 font-black uppercase text-xs tracking-widest text-zinc-900">Professor</th>
                 <th className="p-4 font-black uppercase text-xs tracking-widest text-zinc-900">Dias / Horário</th>
                 <th className="p-4 font-black uppercase text-xs tracking-widest text-zinc-900">Vagas</th>
                 <th className="p-4 font-black uppercase text-xs tracking-widest text-zinc-900 text-center">Status</th>
@@ -149,7 +170,18 @@ export default function TurmasPage() {
               {!loading && !error && turmasFiltradas.map(turma => (
                 <tr key={turma.id_turma} className="border-b-2 border-zinc-100 hover:bg-yellow-50 transition-colors group">
                   <td className="p-4 whitespace-nowrap"><span className="bg-zinc-900 text-white px-3 py-1.5 text-sm font-mono group-hover:bg-yellow-400 group-hover:text-zinc-900 transition-colors">{turma.codigoTurma}</span><div className="text-xs text-zinc-700 font-bold font-mono italic mt-2">SEM: {turma.semestreAno}</div></td>
+                  
                   <td className="p-4 text-zinc-900 uppercase">{turma.curso ? turma.curso.nome : 'Sem Curso'}</td>
+                  
+                  {/* Célula mostrando o nome do professor adicionada aqui */}
+                  <td className="p-4 text-zinc-900">
+                    {turma.professor ? (
+                      <span className="font-bold uppercase">{turma.professor.nome}</span>
+                    ) : (
+                      <span className="text-zinc-400 italic font-normal text-sm">A definir</span>
+                    )}
+                  </td>
+                  
                   <td className="p-4"><div className="uppercase text-zinc-900 mb-1">{turma.diasSemana}</div><div className="text-xs text-zinc-700 font-bold font-mono">{turma.horarioInicio} - {turma.horarioFim}</div></td>
                   <td className="p-4 font-mono text-zinc-900">{turma.limiteVagas} max</td>
                   <td className="p-4 text-center"><span className={`px-3 py-1.5 font-black text-xs uppercase border ${turma.status === 'Aberta' ? 'bg-emerald-100 text-emerald-700 border-emerald-300' : turma.status === 'Em Andamento' ? 'bg-blue-100 text-blue-700 border-blue-300' : 'bg-red-100 text-red-700 border-red-300'}`}>{turma.status}</span></td>

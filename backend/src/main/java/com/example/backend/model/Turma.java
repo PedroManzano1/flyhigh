@@ -37,7 +37,7 @@ public class Turma {
     @JoinColumn(name = "id_curso")
     private Curso curso;
 
-    // Provisório: apenas a coluna numérica até criar a entidade Professor
-    @Column(name = "id_professor")
-    private Long idProfessor;
+    @ManyToOne
+    @JoinColumn(name = "id_professor")
+    private Usuario professor;
 }
