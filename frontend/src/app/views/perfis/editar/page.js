@@ -15,7 +15,7 @@ const InputField = ({ label, name, placeholder, type = "text", onChange, value, 
 );
 
 // Módulos disponíveis no sistema FlyHigh
-const MODULOS = ["USUARIOS", "ALUNOS", "RESPONSAVEIS", "CURSOS", "TURMAS", "VINCULOS", "PERFIS"];
+const MODULOS = ["USUARIOS", "ALUNOS", "RESPONSAVEIS", "CURSOS", "TURMAS", "VINCULOS", "PERFIS", "RECADOS"];
 
 export default function EditarPerfilPage() {
   const router = useRouter();

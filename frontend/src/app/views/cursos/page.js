@@ -1,7 +1,8 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import api from '../../../utils/api';
 import { useRouter } from 'next/navigation'; 
+import { AuthContext } from '../../../context/authContext'; 
 
 const InputField = ({ label, name, placeholder, type = "text", onChange, value, className = "" }) => (
   <div className={className}>
@@ -27,6 +28,8 @@ const SelectField = ({ label, name, children, onChange, value }) => (
 
 export default function CursosPage() {
   const router = useRouter();
+  const { user } = useContext(AuthContext); // Importando o usuário logado
+
   const [cursos, setCursos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -34,6 +37,12 @@ export default function CursosPage() {
 
   const estadoInicial = { nome: '', tipo: '', cargaHorariaTotal: '', valorBase: '', faixaEtaria: '', ativo: 'true' };
   const [formData, setFormData] = useState(estadoInicial);
+
+  // Função Mágica de Validação de Permissões
+  const temPermissao = (permissaoNecessaria) => {
+    if (!user || !user.permissoes) return false;
+    return user.permissoes.includes('ROLE_DIRETOR') || user.permissoes.includes(permissaoNecessaria);
+  };
 
   const carregarCursos = async () => {
     setLoading(true);
@@ -97,50 +106,53 @@ export default function CursosPage() {
         </button>
       </header>
       
-      <form onSubmit={handleSubmit} className="grid grid-cols-1 xl:grid-cols-3 gap-10 mb-16">
-        <div className="bg-white p-8 border-4 border-zinc-900 shadow-[8px_8px_0px_0px_rgba(250,204,21,1)] space-y-6">
-          <h2 className="font-black text-lg uppercase border-b-4 border-yellow-400 pb-2 mb-4">01. Perfil do Curso</h2>
-          <InputField label="Nome do Nível" name="nome" placeholder="Ex: Advanced 1, Kids Starter" onChange={handleChange} value={formData.nome} />
-          <div className="grid grid-cols-2 gap-4">
-            <SelectField label="Tipo" name="tipo" onChange={handleChange} value={formData.tipo}>
-              <option value="">Selecione...</option>
-              <option value="Regular">Regular</option>
-              <option value="Intensivo">Intensivo</option>
-              <option value="Preparatório">Preparatório VIP</option>
+      {/* Formulário protegido pela permissão CURSOS_WRITE */}
+      {temPermissao('CURSOS_WRITE') && (
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 xl:grid-cols-3 gap-10 mb-16">
+          <div className="bg-white p-8 border-4 border-zinc-900 shadow-[8px_8px_0px_0px_rgba(250,204,21,1)] space-y-6">
+            <h2 className="font-black text-lg uppercase border-b-4 border-yellow-400 pb-2 mb-4">01. Perfil do Curso</h2>
+            <InputField label="Nome do Nível" name="nome" placeholder="Ex: Advanced 1, Kids Starter" onChange={handleChange} value={formData.nome} />
+            <div className="grid grid-cols-2 gap-4">
+              <SelectField label="Tipo" name="tipo" onChange={handleChange} value={formData.tipo}>
+                <option value="">Selecione...</option>
+                <option value="Regular">Regular</option>
+                <option value="Intensivo">Intensivo</option>
+                <option value="Preparatório">Preparatório VIP</option>
+              </SelectField>
+              <InputField label="Faixa Etária" name="faixaEtaria" placeholder="Ex: 11 a 14 anos" onChange={handleChange} value={formData.faixaEtaria} />
+            </div>
+          </div>
+
+          <div className="bg-white p-8 border-4 border-zinc-900 shadow-[8px_8px_0px_0px_rgba(24,24,27,1)] space-y-6">
+            <h2 className="font-black text-lg uppercase border-b-4 border-yellow-400 pb-2 mb-4">02. Técnico & Comercial</h2>
+            <div className="grid grid-cols-2 gap-4">
+              <InputField label="Carga Horária (Hrs)" name="cargaHorariaTotal" type="number" placeholder="Ex: 120" onChange={handleChange} value={formData.cargaHorariaTotal} />
+              <InputField label="Valor Base (R$)" name="valorBase" type="number" step="0.01" placeholder="Ex: 1500.00" onChange={handleChange} value={formData.valorBase} />
+            </div>
+            <SelectField label="Status do Curso" name="ativo" onChange={handleChange} value={formData.ativo}>
+              <option value="true">🟢 Ativo (Aberto para Matrículas)</option>
+              <option value="false">🔴 Inativo (Turmas Fechadas)</option>
             </SelectField>
-            <InputField label="Faixa Etária" name="faixaEtaria" placeholder="Ex: 11 a 14 anos" onChange={handleChange} value={formData.faixaEtaria} />
           </div>
-        </div>
 
-        <div className="bg-white p-8 border-4 border-zinc-900 shadow-[8px_8px_0px_0px_rgba(24,24,27,1)] space-y-6">
-          <h2 className="font-black text-lg uppercase border-b-4 border-yellow-400 pb-2 mb-4">02. Técnico & Comercial</h2>
-          <div className="grid grid-cols-2 gap-4">
-            <InputField label="Carga Horária (Hrs)" name="cargaHorariaTotal" type="number" placeholder="Ex: 120" onChange={handleChange} value={formData.cargaHorariaTotal} />
-            <InputField label="Valor Base (R$)" name="valorBase" type="number" step="0.01" placeholder="Ex: 1500.00" onChange={handleChange} value={formData.valorBase} />
+          <div className="bg-yellow-400 p-8 border-4 border-zinc-900 shadow-[8px_8px_0px_0px_rgba(24,24,27,1)] flex flex-col justify-between">
+            <div>
+              <h2 className="font-black text-2xl uppercase mb-4 italic">New Flight Route?</h2>
+              <p className="font-bold text-zinc-900 text-sm leading-tight border-l-4 border-zinc-900 pl-4">
+                Defina com clareza o nome e o tipo do nível. O valor base será utilizado como referência no momento da matrícula.
+              </p>
+            </div>
+            <div className="flex flex-col gap-4 mt-10">
+              <button type="submit" className="bg-zinc-900 text-white p-4 font-black uppercase tracking-[0.2em] hover:bg-white hover:text-zinc-900 transition-all border-2 border-zinc-900">
+                Criar Nível
+              </button>
+              <button type="button" onClick={() => setFormData(estadoInicial)} className="bg-transparent text-zinc-900 p-4 font-bold uppercase text-xs border-2 border-dashed border-zinc-900 hover:bg-white transition-all">
+                Limpar Campos
+              </button>
+            </div>
           </div>
-          <SelectField label="Status do Curso" name="ativo" onChange={handleChange} value={formData.ativo}>
-            <option value="true">🟢 Ativo (Aberto para Matrículas)</option>
-            <option value="false">🔴 Inativo (Turmas Fechadas)</option>
-          </SelectField>
-        </div>
-
-        <div className="bg-yellow-400 p-8 border-4 border-zinc-900 shadow-[8px_8px_0px_0px_rgba(24,24,27,1)] flex flex-col justify-between">
-          <div>
-            <h2 className="font-black text-2xl uppercase mb-4 italic">New Flight Route?</h2>
-            <p className="font-bold text-zinc-900 text-sm leading-tight border-l-4 border-zinc-900 pl-4">
-              Defina com clareza o nome e o tipo do nível. O valor base será utilizado como referência no momento da matrícula.
-            </p>
-          </div>
-          <div className="flex flex-col gap-4 mt-10">
-            <button type="submit" className="bg-zinc-900 text-white p-4 font-black uppercase tracking-[0.2em] hover:bg-white hover:text-zinc-900 transition-all border-2 border-zinc-900">
-              Criar Nível
-            </button>
-            <button type="button" onClick={() => setFormData(estadoInicial)} className="bg-transparent text-zinc-900 p-4 font-bold uppercase text-xs border-2 border-dashed border-zinc-900 hover:bg-white transition-all">
-              Limpar Campos
-            </button>
-          </div>
-        </div>
-      </form>
+        </form>
+      )}
       
       <section className="bg-white border-4 border-zinc-900 shadow-[12px_12px_0px_0px_rgba(24,24,27,1)] overflow-hidden">
         <div className="bg-zinc-900 p-6 flex justify-between items-center flex-wrap gap-4">
@@ -201,8 +213,15 @@ export default function CursosPage() {
                   </td>
                   <td className="p-4">
                     <div className="flex justify-center gap-2">
-                      <button onClick={() => handleEditar(curso.id_curso)} className="bg-zinc-900 text-white w-10 h-10 flex items-center justify-center hover:bg-yellow-400 hover:text-zinc-900 transition-all border-2 border-zinc-900">✎</button>
-                      <button onClick={() => handleExcluir(curso.id_curso)} className="bg-white text-zinc-900 w-10 h-10 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all border-2 border-zinc-900 shadow-[2px_2px_0px_0px_rgba(24,24,27,1)] active:shadow-none">🗑</button>
+                      {/* Botão de Edição protegido pela permissão CURSOS_WRITE */}
+                      {temPermissao('CURSOS_WRITE') && (
+                        <button onClick={() => handleEditar(curso.id_curso)} className="bg-zinc-900 text-white w-10 h-10 flex items-center justify-center hover:bg-yellow-400 hover:text-zinc-900 transition-all border-2 border-zinc-900">✎</button>
+                      )}
+                      
+                      {/* Botão de Exclusão protegido pela permissão CURSOS_DELETE */}
+                      {temPermissao('CURSOS_DELETE') && (
+                        <button onClick={() => handleExcluir(curso.id_curso)} className="bg-white text-zinc-900 w-10 h-10 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all border-2 border-zinc-900 shadow-[2px_2px_0px_0px_rgba(24,24,27,1)] active:shadow-none">🗑</button>
+                      )}
                     </div>
                   </td>
                 </tr>
