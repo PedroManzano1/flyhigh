@@ -17,17 +17,23 @@ public class VinculoController {
     @Autowired
     private VinculoService service;
 
-    // Criar um novo vínculo (Ex: Matricular um aluno com seu pai)
     @PreAuthorize("hasRole('DIRETOR') or hasAuthority('VINCULOS_WRITE')")
     @PostMapping
     public ResponseEntity<VinculoAlunoResponsavel> criarVinculo(@RequestBody VinculoAlunoResponsavel vinculo) {
         return ResponseEntity.ok(service.vincular(vinculo));
     }
 
-    // Listar todos os vínculos (Útil para relatórios)
     @PreAuthorize("hasRole('DIRETOR') or hasAuthority('VINCULOS_READ')")
     @GetMapping
     public List<VinculoAlunoResponsavel> getAll() {
         return service.listarTodos();
+    }
+
+    //Endpoint para deletar o vínculo
+    @PreAuthorize("hasRole('DIRETOR') or hasAuthority('VINCULOS_WRITE')")
+    @DeleteMapping("/{id_aluno}/{id_responsavel}")
+    public ResponseEntity<Void> deletarVinculo(@PathVariable Long id_aluno, @PathVariable Long id_responsavel) {
+        service.desfazerVinculo(id_aluno, id_responsavel);
+        return ResponseEntity.noContent().build();
     }
 }

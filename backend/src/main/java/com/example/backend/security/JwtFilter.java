@@ -37,7 +37,7 @@ public class JwtFilter extends OncePerRequestFilter {
         if (token != null && jwtUtils.isTokenValid(token)) {
             String login = jwtUtils.getLoginUsuario(token);
 
-            // Olha a mágica: pegamos as permissões direto do token, sem fazer um "SELECT" no banco de dados!
+            // pegamos as permissões direto do token, sem fazer um "SELECT" no banco de dados
             List<SimpleGrantedAuthority> authorities = jwtUtils.getAuthorities(token);
 
             // Cria o "crachá de acesso" temporário para esta requisição

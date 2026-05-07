@@ -12,7 +12,7 @@ const InputField = ({ label, name, placeholder, type = "text", onChange, value, 
       value={value || ''} 
       onChange={onChange} 
       placeholder={placeholder}
-      className="w-full p-3 border-2 border-zinc-900 rounded-none text-sm focus:ring-0 focus:border-emerald-400 bg-white shadow-[4px_4px_0px_0px_rgba(24,24,27,1)] transition-all focus:translate-x-[2px] focus:translate-y-[2px] focus:shadow-none outline-none"
+      className="w-full p-3 border-2 border-zinc-900 rounded-none text-sm focus:ring-0 focus:border-yellow-400 bg-white shadow-[4px_4px_0px_0px_rgba(24,24,27,1)] transition-all focus:translate-x-[2px] focus:translate-y-[2px] focus:shadow-none outline-none"
     />
   </div>
 );
@@ -25,7 +25,7 @@ const TextareaField = ({ label, name, placeholder, onChange, value, className = 
       value={value || ''} 
       onChange={onChange} 
       placeholder={placeholder} 
-      className="w-full p-3 h-48 resize-none border-2 border-zinc-900 rounded-none text-sm focus:ring-0 focus:border-emerald-400 bg-white shadow-[4px_4px_0px_0px_rgba(24,24,27,1)] transition-all focus:translate-x-[2px] focus:translate-y-[2px] focus:shadow-none outline-none" 
+      className="w-full p-3 h-48 resize-none border-2 border-zinc-900 rounded-none text-sm focus:ring-0 focus:border-yellow-400 bg-white shadow-[4px_4px_0px_0px_rgba(24,24,27,1)] transition-all focus:translate-x-[2px] focus:translate-y-[2px] focus:shadow-none outline-none" 
     />
   </div>
 );
@@ -96,7 +96,7 @@ export default function EditarRecadoPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-100">
-        <span className="font-black uppercase tracking-widest animate-pulse text-emerald-600">Acessando Mural...</span>
+        <span className="font-black uppercase tracking-widest animate-pulse text-yellow-600">Acessando Mural...</span>
       </div>
     );
   }
@@ -112,13 +112,13 @@ export default function EditarRecadoPage() {
         </button>
         <div>
           <h1 className="text-4xl font-black uppercase tracking-tighter italic">Editar Recado</h1>
-          <div className="h-2 w-24 bg-emerald-400 mt-2"></div>
+          <div className="h-2 w-24 bg-yellow-400 mt-2"></div>
         </div>
       </header>
       
       <form onSubmit={handleSubmit} className="grid grid-cols-1 xl:grid-cols-3 gap-10 mb-12">
-        <div className="bg-white p-8 border-4 border-zinc-900 shadow-[8px_8px_0px_0px_rgba(52,211,153,1)] space-y-6 xl:col-span-2">
-          <h2 className="font-black text-lg uppercase border-b-4 border-emerald-400 pb-2 mb-4">Revisar Conteúdo</h2>
+        <div className="bg-white p-8 border-4 border-zinc-900 shadow-[8px_8px_0px_0px_rgba(250,204,21,1)] space-y-6 xl:col-span-2">
+          <h2 className="font-black text-lg uppercase border-b-4 border-yellow-400 pb-2 mb-4">Revisar Conteúdo</h2>
           <InputField label="Título do Recado" name="titulo" onChange={handleChange} value={formData.titulo} />
           <TextareaField label="Mensagem Completa" name="mensagem" onChange={handleChange} value={formData.mensagem} />
           
@@ -128,7 +128,7 @@ export default function EditarRecadoPage() {
           </div>
         </div>
 
-        <div className="bg-emerald-400 p-8 border-4 border-zinc-900 shadow-[8px_8px_0px_0px_rgba(24,24,27,1)] flex flex-col justify-between">
+        <div className="bg-yellow-400 p-8 border-4 border-zinc-900 shadow-[8px_8px_0px_0px_rgba(24,24,27,1)] flex flex-col justify-between">
           <div>
             <h2 className="font-black text-2xl uppercase mb-4 italic">Update?</h2>
             <p className="font-bold text-zinc-900 text-sm leading-tight border-l-4 border-zinc-900 pl-4">

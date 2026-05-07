@@ -7,14 +7,14 @@ import { AuthContext } from '../../../context/authContext';
 const InputField = ({ label, name, placeholder, type = "text", onChange, value, className = "" }) => (
   <div className={className}>
     <label className="block text-xs font-black text-zinc-800 uppercase tracking-widest mb-1">{label}</label>
-    <input type={type} name={name} value={value || ''} onChange={onChange} placeholder={placeholder} className="w-full p-3 border-2 border-zinc-900 rounded-none text-sm focus:ring-0 focus:border-emerald-400 bg-white shadow-[4px_4px_0px_0px_rgba(24,24,27,1)] transition-all focus:translate-x-[2px] focus:translate-y-[2px] focus:shadow-none outline-none" />
+    <input type={type} name={name} value={value || ''} onChange={onChange} placeholder={placeholder} className="w-full p-3 border-2 border-zinc-900 rounded-none text-sm focus:ring-0 focus:border-yellow-400 bg-white shadow-[4px_4px_0px_0px_rgba(24,24,27,1)] transition-all focus:translate-x-[2px] focus:translate-y-[2px] focus:shadow-none outline-none" />
   </div>
 );
 
 const TextareaField = ({ label, name, placeholder, onChange, value, className = "" }) => (
   <div className={className}>
     <label className="block text-xs font-black text-zinc-800 uppercase tracking-widest mb-1">{label}</label>
-    <textarea name={name} value={value || ''} onChange={onChange} placeholder={placeholder} className="w-full p-3 h-32 resize-none border-2 border-zinc-900 rounded-none text-sm focus:ring-0 focus:border-emerald-400 bg-white shadow-[4px_4px_0px_0px_rgba(24,24,27,1)] transition-all focus:translate-x-[2px] focus:translate-y-[2px] focus:shadow-none outline-none" />
+    <textarea name={name} value={value || ''} onChange={onChange} placeholder={placeholder} className="w-full p-3 h-32 resize-none border-2 border-zinc-900 rounded-none text-sm focus:ring-0 focus:border-yellow-400 bg-white shadow-[4px_4px_0px_0px_rgba(24,24,27,1)] transition-all focus:translate-x-[2px] focus:translate-y-[2px] focus:shadow-none outline-none" />
   </div>
 );
 
@@ -78,17 +78,17 @@ export default function RecadosPage() {
       <header className="mb-12 flex items-center justify-between">
         <div>
           <h1 className="text-4xl font-black uppercase tracking-tighter italic">Mural de Recados</h1>
-          <div className="h-2 w-24 bg-emerald-400 mt-2"></div>
+          <div className="h-2 w-24 bg-yellow-400 mt-2"></div>
         </div>
-        <button onClick={() => router.push('/')} className="flex items-center gap-2 px-6 py-3 bg-zinc-900 text-white font-bold uppercase text-xs tracking-widest hover:bg-emerald-400 hover:text-zinc-900 transition-all shadow-[4px_4px_0px_0px_rgba(52,211,153,1)]">
+        <button onClick={() => router.push('/')} className="flex items-center gap-2 px-6 py-3 bg-zinc-900 text-white font-bold uppercase text-xs tracking-widest hover:bg-yellow-400 hover:text-zinc-900 transition-all shadow-[4px_4px_0px_0px_rgba(250,204,21,1)]">
           <span>⌂</span> Voltar ao Início
         </button>
       </header>
       
       {temPermissao('RECADOS_WRITE') && (
         <form onSubmit={handleSubmit} className="grid grid-cols-1 xl:grid-cols-3 gap-10 mb-16">
-          <div className="bg-white p-8 border-4 border-zinc-900 shadow-[8px_8px_0px_0px_rgba(52,211,153,1)] space-y-6 xl:col-span-2">
-            <h2 className="font-black text-lg uppercase border-b-4 border-emerald-400 pb-2 mb-4">01. Redigir Comunicado</h2>
+          <div className="bg-white p-8 border-4 border-zinc-900 shadow-[8px_8px_0px_0px_rgba(250,204,21,1)] space-y-6 xl:col-span-2">
+            <h2 className="font-black text-lg uppercase border-b-4 border-yellow-400 pb-2 mb-4">01. Redigir Comunicado</h2>
             <InputField label="Título do Recado" name="titulo" placeholder="Ex: Feriado Nacional - Suspensão de Aulas" onChange={handleChange} value={formData.titulo} />
             <TextareaField label="Mensagem" name="mensagem" placeholder="Escreva os detalhes do comunicado aqui..." onChange={handleChange} value={formData.mensagem} />
             <div className="grid grid-cols-2 gap-4">
@@ -97,7 +97,7 @@ export default function RecadosPage() {
             </div>
           </div>
 
-          <div className="bg-emerald-400 p-8 border-4 border-zinc-900 shadow-[8px_8px_0px_0px_rgba(24,24,27,1)] flex flex-col justify-between">
+          <div className="bg-yellow-400 p-8 border-4 border-zinc-900 shadow-[8px_8px_0px_0px_rgba(24,24,27,1)] flex flex-col justify-between">
             <div>
               <h2 className="font-black text-2xl uppercase mb-4 italic">Broadcast</h2>
               <p className="font-bold text-zinc-900 text-sm leading-tight border-l-4 border-zinc-900 pl-4">
@@ -116,74 +116,104 @@ export default function RecadosPage() {
         </form>
       )}
       
+      {/* MURAL DE RECADOS - NOVO LAYOUT EM GRID */}
       <section className="bg-white border-4 border-zinc-900 shadow-[12px_12px_0px_0px_rgba(24,24,27,1)] overflow-hidden">
-        <div className="bg-zinc-900 p-6 flex justify-between items-center">
-          <h2 className="font-black text-xl text-white uppercase tracking-tighter italic">Quadro de Avisos</h2>
-          <input type="text" placeholder="BUSCAR RECADO..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full max-w-md pl-4 py-2 bg-white text-xs font-bold uppercase focus:outline-none" />
+        <div className="bg-zinc-900 p-6 flex flex-col sm:flex-row justify-between items-center gap-4">
+          <h2 className="font-black text-xl text-white uppercase tracking-tighter italic">📌 Mural Interativo</h2>
+          <input 
+            type="text" 
+            placeholder="BUSCAR RECADO..." 
+            value={searchTerm} 
+            onChange={e => setSearchTerm(e.target.value)} 
+            className="w-full max-w-md pl-4 py-3 bg-white text-sm font-bold uppercase focus:outline-none border-2 border-transparent focus:border-yellow-400 transition-colors" 
+          />
         </div>
 
-        <div className="overflow-x-auto p-4">
-          <table className="w-full text-left min-w-[1000px]">
-            <thead>
-              <tr className="border-b-4 border-zinc-900 bg-gray-50">
-                <th className="p-4 font-black uppercase text-xs text-zinc-700 w-1/4">Título</th>
-                <th className="p-4 font-black uppercase text-xs text-zinc-900 w-1/3">Resumo da Mensagem</th>
-                <th className="p-4 font-black uppercase text-xs text-zinc-900">Datas</th>
-                <th className="p-4 font-black uppercase text-xs text-zinc-900">Autor</th>
-                <th className="p-4 font-black uppercase text-xs text-center text-zinc-900">Ações</th>
-              </tr>
-            </thead>
-            <tbody className="font-bold text-base">
-              {!loading && recadosFiltrados.map(recado => (
-                <tr key={recado.id_recado} className="border-b-2 border-zinc-100 hover:bg-emerald-50 transition-colors">
-                  
-                  {/* TÍTULO */}
-                  <td className="p-4">
-                    <span className="uppercase text-zinc-900 block truncate max-w-[250px]">{recado.titulo}</span>
-                  </td>
-                  
-                  {/* MENSAGEM (TRUNCADA) */}
-                  <td className="p-4">
-                    <p className="text-sm text-zinc-600 font-medium truncate max-w-[350px]">{recado.mensagem}</p>
-                    {recado.arquivoAnexo && (
-                      <a href={recado.arquivoAnexo} target="_blank" rel="noreferrer" className="text-[10px] uppercase text-emerald-600 hover:underline inline-block mt-1">📎 Ver Anexo</a>
-                    )}
-                  </td>
+        <div className="p-8 bg-zinc-50 min-h-[400px]">
+          {loading ? (
+            <div className="flex justify-center items-center h-full text-zinc-400 font-bold uppercase tracking-widest">
+              Carregando mural...
+            </div>
+          ) : recadosFiltrados.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <span className="text-6xl mb-4 opacity-50">📭</span>
+              <h3 className="font-black text-xl text-zinc-400 uppercase tracking-widest">Nenhum recado encontrado</h3>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+              {recadosFiltrados.map(recado => (
+                <article 
+                  key={recado.id_recado} 
+                  className="bg-white border-4 border-zinc-900 shadow-[8px_8px_0px_0px_rgba(24,24,27,1)] flex flex-col relative group hover:-translate-y-1 hover:shadow-[12px_12px_0px_0px_rgba(250,204,21,1)] transition-all"
+                >
+                  {/* Título do Recado */}
+                  <div className="bg-yellow-400 p-5 border-b-4 border-zinc-900 flex justify-between items-start">
+                    <h3 className="font-black text-xl uppercase leading-tight text-zinc-900">
+                      {recado.titulo}
+                    </h3>
+                  </div>
 
-                  {/* DATAS */}
-                  <td className="p-4 whitespace-nowrap">
-                    <div className="flex flex-col gap-1 text-xs font-mono font-bold">
-                      <span className="text-zinc-800"><span className="text-zinc-400">PUB:</span> {new Date(recado.dataPublicacao).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</span>
-                      {recado.dataExpiracao ? (
-                        <span className="text-red-500"><span className="text-zinc-400">EXP:</span> {new Date(recado.dataExpiracao).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</span>
-                      ) : (
-                        <span className="text-emerald-500">Sem Expiração</span>
+                  {/* Corpo da Mensagem */}
+                  <div className="p-6 flex-grow flex flex-col gap-6">
+                    <p className="text-zinc-800 font-bold text-base leading-relaxed whitespace-pre-wrap">
+                      {recado.mensagem}
+                    </p>
+                    
+                    {recado.arquivoAnexo && (
+                      <div className="mt-auto">
+                        <a 
+                          href={recado.arquivoAnexo} 
+                          target="_blank" 
+                          rel="noreferrer" 
+                          className="inline-flex w-max items-center gap-2 bg-yellow-100 text-yellow-900 px-4 py-2 border-2 border-zinc-900 font-black text-xs uppercase shadow-[2px_2px_0px_0px_rgba(24,24,27,1)] hover:bg-zinc-900 hover:text-yellow-400 transition-colors"
+                        >
+                          📎 Acessar Anexo Completo
+                        </a>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Rodapé: Metadados e Gestão */}
+                  <div className="bg-zinc-100 p-4 border-t-4 border-zinc-900 flex flex-col sm:flex-row justify-between items-center gap-4">
+                    <div className="flex flex-col gap-1 text-[11px] font-mono font-bold w-full">
+                      <span className="text-zinc-800 bg-white border border-zinc-300 px-2 py-0.5 w-max">
+                        AUTOR: {recado.usuarioAutor?.login || 'SISTEMA'}
+                      </span>
+                      <span className="text-zinc-600">
+                        <span className="text-zinc-400">PUB:</span> {new Date(recado.dataPublicacao).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}
+                      </span>
+                      {recado.dataExpiracao && (
+                        <span className="text-red-600">
+                          <span className="text-red-400">EXP:</span> {new Date(recado.dataExpiracao).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}
+                        </span>
                       )}
                     </div>
-                  </td>
 
-                  {/* AUTOR */}
-                  <td className="p-4">
-                     <span className="bg-zinc-200 text-zinc-800 px-2 py-1 text-xs uppercase shadow-[2px_2px_0px_0px_rgba(24,24,27,1)] border border-zinc-900">
-                        {recado.usuarioAutor?.login || 'Sistema'}
-                     </span>
-                  </td>
-
-                  {/* AÇÕES */}
-                  <td className="p-4">
-                    <div className="flex justify-center gap-2">
+                    <div className="flex gap-2 shrink-0">
                       {temPermissao('RECADOS_WRITE') && (
-                        <button onClick={() => router.push(`/views/recados/editar?id=${recado.id_recado}`)} className="bg-zinc-900 text-white w-10 h-10 flex items-center justify-center hover:bg-emerald-400 hover:text-zinc-900 border-2 border-zinc-900">✎</button>
+                        <button 
+                          onClick={() => router.push(`/views/recados/editar?id=${recado.id_recado}`)} 
+                          className="bg-white text-zinc-900 w-10 h-10 flex items-center justify-center text-lg hover:bg-yellow-400 border-2 border-zinc-900 shadow-[2px_2px_0px_0px_rgba(24,24,27,1)] transition-colors"
+                          title="Editar Recado"
+                        >
+                          ✎
+                        </button>
                       )}
                       {temPermissao('RECADOS_DELETE') && (
-                        <button onClick={() => handleExcluir(recado.id_recado)} className="bg-white text-zinc-900 w-10 h-10 flex items-center justify-center hover:bg-red-500 hover:text-white border-2 border-zinc-900 shadow-[2px_2px_0px_0px_rgba(24,24,27,1)]">🗑</button>
+                        <button 
+                          onClick={() => handleExcluir(recado.id_recado)} 
+                          className="bg-white text-zinc-900 w-10 h-10 flex items-center justify-center text-lg hover:bg-red-500 hover:text-white border-2 border-zinc-900 shadow-[2px_2px_0px_0px_rgba(24,24,27,1)] transition-colors"
+                          title="Excluir Recado"
+                        >
+                          🗑
+                        </button>
                       )}
                     </div>
-                  </td>
-                </tr>
+                  </div>
+                </article>
               ))}
-            </tbody>
-          </table>
+            </div>
+          )}
         </div>
       </section>
     </div>

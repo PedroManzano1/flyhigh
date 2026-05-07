@@ -63,8 +63,7 @@ export default function Home() {
           {/* Card 01: Alunos */}
           {temPermissao('ALUNOS_READ') && (
             <Link href="/views/alunos" className="group h-full">
-              <div className="bg-zinc-900 p-8 rounded-sm hover:translate-x-2 hover:-translate-y-2 transition-all duration-300 relative h-full flex flex-col">
-                <div className="absolute inset-0 bg-yellow-400 translate-x-0 translate-y-0 group-hover:translate-x-4 group-hover:translate-y-4 -z-10 transition-all"></div>
+              <div className="bg-zinc-900 p-8 rounded-2xl transition-all duration-300 h-full flex flex-col hover:shadow-lg">
                 <div className="flex justify-between items-start mb-6 w-full">
                   <div className="text-4xl">🎓</div>
                   <span className="text-yellow-400 text-4xl group-hover:translate-x-2 transition-transform flex-shrink-0">&rarr;</span>
@@ -80,8 +79,7 @@ export default function Home() {
           {/* Card 02: Responsáveis */}
           {temPermissao('RESPONSAVEIS_READ') && (
             <Link href="/views/responsaveis" className="group h-full">
-              <div className="bg-white border-4 border-zinc-900 p-8 rounded-sm hover:translate-x-2 hover:-translate-y-2 transition-all duration-300 relative h-full flex flex-col">
-                <div className="absolute inset-0 bg-zinc-200 translate-x-0 translate-y-0 group-hover:translate-x-4 group-hover:translate-y-4 -z-10 transition-all"></div>
+              <div className="bg-white border-4 border-zinc-900 p-8 rounded-2xl transition-all duration-300 h-full flex flex-col hover:shadow-lg">
                 <div className="flex justify-between items-start mb-6 w-full">
                   <div className="text-4xl">👥</div>
                   <span className="text-zinc-900 text-4xl group-hover:translate-x-2 transition-transform flex-shrink-0">&rarr;</span>
@@ -97,8 +95,7 @@ export default function Home() {
           {/* Card 03: Cursos */}
           {temPermissao('CURSOS_READ') && (
             <Link href="/views/cursos" className="group h-full">
-              <div className="bg-yellow-400 border-4 border-zinc-900 p-8 rounded-sm hover:translate-x-2 hover:-translate-y-2 transition-all duration-300 relative h-full flex flex-col">
-                <div className="absolute inset-0 bg-white border-4 border-zinc-900 translate-x-0 translate-y-0 group-hover:translate-x-4 group-hover:translate-y-4 -z-10 transition-all"></div>
+              <div className="bg-yellow-400 border-4 border-zinc-900 p-8 rounded-2xl transition-all duration-300 h-full flex flex-col hover:shadow-lg">
                 <div className="flex justify-between items-start mb-6 w-full">
                   <div className="text-4xl">📚</div>
                   <span className="text-zinc-900 text-4xl group-hover:translate-x-2 transition-transform flex-shrink-0">&rarr;</span>
@@ -114,15 +111,14 @@ export default function Home() {
           {/* Card 04: Turmas */}
           {temPermissao('TURMAS_READ') && (
             <Link href="/views/turmas" className="group h-full">
-              <div className="bg-zinc-100 border-4 border-zinc-900 p-8 rounded-sm hover:translate-x-2 hover:-translate-y-2 group-hover:bg-zinc-900 transition-colors duration-300 relative h-full flex flex-col">
-                <div className="absolute inset-0 bg-yellow-400 translate-x-0 translate-y-0 group-hover:translate-x-4 group-hover:translate-y-4 -z-10 transition-all"></div>
+              <div className="bg-zinc-100 border-4 border-zinc-900 p-8 rounded-2xl transition-all duration-300 h-full flex flex-col hover:shadow-lg">
                 <div className="flex justify-between items-start mb-6 w-full">
                   <div className="text-4xl">🗓️</div>
                   <span className="text-zinc-900 group-hover:text-yellow-400 text-4xl group-hover:translate-x-2 transition-all flex-shrink-0">&rarr;</span>
                 </div>
                 <div className="flex flex-col flex-grow justify-between">
-                  <h3 className="text-2xl font-black text-zinc-900 group-hover:text-white mb-3 uppercase tracking-tighter transition-colors">Gestão de Turmas</h3>
-                  <p className="text-zinc-600 group-hover:text-zinc-300 font-medium mt-2 text-sm leading-relaxed transition-colors">Gerencie horários, capacidades e alocação de turmas.</p>
+                  <h3 className="text-2xl font-black text-zinc-900 mb-3 uppercase tracking-tighter transition-colors">Gestão de Turmas</h3>
+                  <p className="text-zinc-600 font-medium mt-2 text-sm leading-relaxed transition-colors">Gerencie horários, capacidades e alocação de turmas.</p>
                 </div>
               </div>
             </Link>
@@ -131,8 +127,7 @@ export default function Home() {
           {/* Card 05: Perfis de Acesso */}
           {temPermissao('PERFIS_READ') && (
             <Link href="/views/perfis" className="group h-full">
-              <div className="bg-zinc-900 border-4 border-zinc-900 p-8 rounded-sm hover:translate-x-2 hover:-translate-y-2 transition-all duration-300 relative h-full flex flex-col">
-                <div className="absolute inset-0 bg-sky-300 translate-x-0 translate-y-0 group-hover:translate-x-4 group-hover:translate-y-4 -z-10 transition-all"></div>
+              <div className="bg-zinc-900 border-4 border-zinc-900 p-8 rounded-2xl transition-all duration-300 h-full flex flex-col hover:shadow-lg">
                 <div className="flex justify-between items-start mb-6 w-full">
                   <div className="text-4xl">🛡️</div>
                   <span className="text-sky-300 text-4xl group-hover:translate-x-2 transition-transform flex-shrink-0">&rarr;</span>
@@ -145,11 +140,11 @@ export default function Home() {
             </Link>
           )}
 
-          {/* CARD 05: Usuarios */}
+          {/* CARD 06: Usuarios */}
           {temPermissao('USUARIOS_READ') && (
-            <div onClick={() => router.push('/views/usuarios')} className="group cursor-pointer bg-white border-4 border-zinc-900 p-6 shadow-[8px_8px_0px_0px_rgba(24,24,27,1)] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all">
+            <div onClick={() => router.push('/views/usuarios')} className="group cursor-pointer bg-white border-4 border-zinc-900 p-6 rounded-2xl transition-all hover:shadow-lg h-full flex flex-col">
               <div className="flex justify-between items-start mb-4">
-                <div className="bg-yellow-400 p-3 border-2 border-zinc-900">
+                <div className="bg-yellow-400 p-3 border-2 border-zinc-900 rounded-xl">
                   <span className="text-2xl">👤</span>
                 </div>
                 <span className="text-xs font-black uppercase tracking-widest text-zinc-400">Equipe</span>
@@ -159,11 +154,10 @@ export default function Home() {
             </div>
           )}
 
-          {/* Card 06: Recados */}
+          {/* Card 07: Recados */}
           {temPermissao('RECADOS_READ') && (
             <Link href="/views/recados" className="group h-full">
-              <div className="bg-emerald-400 border-4 border-zinc-900 p-8 rounded-sm hover:translate-x-2 hover:-translate-y-2 transition-all duration-300 relative h-full flex flex-col">
-                <div className="absolute inset-0 bg-white border-4 border-zinc-900 translate-x-0 translate-y-0 group-hover:translate-x-4 group-hover:translate-y-4 -z-10 transition-all"></div>
+              <div className="bg-emerald-400 border-4 border-zinc-900 p-8 rounded-2xl transition-all duration-300 h-full flex flex-col hover:shadow-lg">
                 <div className="flex justify-between items-start mb-6 w-full">
                   <div className="text-4xl">📢</div>
                   <span className="text-zinc-900 text-4xl group-hover:translate-x-2 transition-transform flex-shrink-0">&rarr;</span>
@@ -180,7 +174,7 @@ export default function Home() {
 
         {/* Mensagem caso o usuário não tenha permissão de ver nenhum card */}
         {user && user.permissoes && user.permissoes.length === 0 && (
-           <div className="bg-white border-4 border-zinc-900 p-8 text-center mt-8">
+           <div className="bg-white border-4 border-zinc-900 rounded-2xl p-8 text-center mt-8">
              <h3 className="text-xl font-black uppercase mb-2">Acesso Restrito</h3>
              <p className="text-zinc-500 font-bold">Seu perfil atual não possui módulos liberados. Contate a direção.</p>
            </div>

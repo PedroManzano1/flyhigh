@@ -125,15 +125,15 @@ export default function EditarPerfilPage() {
         </button>
         <div>
           <h1 className="text-4xl font-black uppercase tracking-tighter italic">Editar Perfil & Acesso</h1>
-          <div className="h-2 w-24 bg-sky-300 mt-2"></div>
+          <div className="h-2 w-24 bg-yellow-400 mt-2"></div>
         </div>
       </header>
       
       <form onSubmit={handleSubmit} className="grid grid-cols-1 xl:grid-cols-3 gap-10 mb-12">
         
         {/* COLUNA 01: DADOS DO PERFIL */}
-        <div className="bg-white p-8 border-4 border-zinc-900 shadow-[8px_8px_0px_0px_rgba(125,211,252,1)] space-y-6">
-          <h2 className="font-black text-lg uppercase border-b-4 border-sky-300 pb-2 mb-4">01. Cargo / Perfil</h2>
+        <div className="bg-white p-8 border-4 border-zinc-900 shadow-[8px_8px_0px_0px_rgba(250,204,21,1)] space-y-6">
+          <h2 className="font-black text-lg uppercase border-b-4 border-yellow-400 pb-2 mb-4">01. Cargo / Perfil</h2>
           <InputField label="Nome do Perfil" name="nomePerfil" onChange={handleFormChange} value={formData.nomePerfil} />
           
           <div>
@@ -186,7 +186,7 @@ export default function EditarPerfilPage() {
             <button type="button" onClick={() => router.push('/views/perfis')} className="bg-transparent text-zinc-900 px-8 py-4 font-bold uppercase text-xs border-2 border-dashed border-zinc-900 hover:bg-white transition-all">
               Cancelar
             </button>
-            <button type="submit" className="bg-sky-300 text-zinc-900 px-8 py-4 font-black uppercase tracking-[0.2em] hover:bg-zinc-900 hover:text-white transition-all border-2 border-zinc-900 shadow-[4px_4px_0px_0px_rgba(24,24,27,1)] active:shadow-none active:translate-x-1 active:translate-y-1">
+            <button type="submit" className="bg-yellow-400 text-zinc-900 px-8 py-4 font-black uppercase tracking-[0.2em] hover:bg-zinc-900 hover:text-white transition-all border-2 border-zinc-900 shadow-[4px_4px_0px_0px_rgba(24,24,27,1)] active:shadow-none active:translate-x-1 active:translate-y-1">
               Atualizar Perfil
             </button>
           </div>

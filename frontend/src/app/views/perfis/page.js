@@ -74,7 +74,7 @@ export default function PerfisPage() {
       <header className="mb-12 flex items-center justify-between">
         <div>
           <h1 className="text-4xl font-black uppercase tracking-tighter italic">Controle de Perfis</h1>
-          <div className="h-2 w-24 bg-sky-300 mt-2"></div>
+          <div className="h-2 w-24 bg-yellow-400 mt-2"></div>
         </div>
         <button onClick={() => router.push('/')} className="flex items-center gap-2 px-6 py-3 bg-zinc-900 text-white font-bold uppercase text-xs tracking-widest hover:bg-yellow-400 hover:text-zinc-900 transition-all shadow-[4px_4px_0px_0px_rgba(250,204,21,1)] active:shadow-none">
           <span>⌂</span> Voltar ao Início
@@ -83,12 +83,12 @@ export default function PerfisPage() {
       
       {temPermissao('PERFIS_WRITE') && (
         <form onSubmit={handleSubmit} className="grid grid-cols-1 xl:grid-cols-3 gap-10 mb-16">
-          <div className="bg-white p-8 border-4 border-zinc-900 shadow-[8px_8px_0px_0px_rgba(125,211,252,1)] space-y-6">
-            <h2 className="font-black text-lg uppercase border-b-4 border-sky-300 pb-2 mb-4">01. Cargo / Perfil</h2>
+          <div className="bg-white p-8 border-4 border-zinc-900 shadow-[8px_8px_0px_0px_rgba(250,204,21,1)] space-y-6">
+            <h2 className="font-black text-lg uppercase border-b-4 border-yellow-400 pb-2 mb-4">01. Cargo / Perfil</h2>
             <InputField label="Nome do Perfil" name="nomePerfil" placeholder="Ex: SECRETARIA" onChange={handleFormChange} value={formData.nomePerfil} />
             <div>
               <label className="block text-xs font-black text-zinc-800 uppercase tracking-widest mb-1">Descrição</label>
-              <textarea name="descricao" value={formData.descricao} onChange={handleFormChange} placeholder="Descreva as funções..." className="w-full p-3 h-32 resize-none border-2 border-zinc-900 bg-white shadow-[4px_4px_0px_0px_rgba(24,24,27,1)] outline-none" />
+              <textarea name="descricao" value={formData.descricao} onChange={handleFormChange} placeholder="Descreva as funções..." className="w-full p-3 h-32 resize-none border-2 border-zinc-900 bg-white shadow-[4px_4px_0px_0px_rgba(24,24,27,1)] outline-none focus:border-yellow-400 transition-colors" />
             </div>
           </div>
 
@@ -116,7 +116,7 @@ export default function PerfisPage() {
                 </tbody>
               </table>
             </div>
-            <button type="submit" className="bg-sky-300 text-zinc-900 p-4 w-full font-black uppercase tracking-[0.2em] hover:bg-zinc-900 hover:text-white transition-all border-2 border-zinc-900 mt-4">Gravar Nível de Acesso</button>
+            <button type="submit" className="bg-yellow-400 text-zinc-900 p-4 w-full font-black uppercase tracking-[0.2em] hover:bg-zinc-900 hover:text-white transition-all border-2 border-zinc-900 mt-4">Gravar Nível de Acesso</button>
           </div>
         </form>
       )}
@@ -137,17 +137,17 @@ export default function PerfisPage() {
             </thead>
             <tbody className="font-bold text-base">
               {!loading && !error && perfis.map(perfil => (
-                <tr key={perfil.idPerfil} className="border-b-2 border-zinc-100 hover:bg-sky-50 transition-colors">
-                  <td className="p-4 whitespace-nowrap"><span className="bg-zinc-900 text-sky-300 px-3 py-1.5 text-sm font-black">{perfil.nomePerfil}</span></td>
+                <tr key={perfil.idPerfil} className="border-b-2 border-zinc-100 hover:bg-yellow-50 transition-colors">
+                  <td className="p-4 whitespace-nowrap"><span className="bg-zinc-900 text-yellow-400 px-3 py-1.5 text-sm font-black">{perfil.nomePerfil}</span></td>
                   <td className="p-4 text-sm text-zinc-600 font-medium">{perfil.descricao}</td>
                   <td className="p-4 text-center"><span className="bg-zinc-100 border px-2 py-1 text-xs">{perfil.permissoes?.length || 0} Regras</span></td>
                   <td className="p-4">
                     <div className="flex justify-center gap-2">
                       {temPermissao('PERFIS_WRITE') && (
-                        <button onClick={() => router.push(`/views/perfis/editar?id=${perfil.idPerfil}`)} className="bg-zinc-900 text-white w-10 h-10 flex items-center justify-center hover:bg-sky-300 border-2 border-zinc-900">✎</button>
+                        <button onClick={() => router.push(`/views/perfis/editar?id=${perfil.idPerfil}`)} className="bg-zinc-900 text-white w-10 h-10 flex items-center justify-center hover:bg-yellow-400 hover:text-zinc-900 border-2 border-zinc-900 transition-colors">✎</button>
                       )}
                       {temPermissao('PERFIS_DELETE') && (
-                        <button onClick={() => handleExcluir(perfil.idPerfil)} className="bg-white text-zinc-900 w-10 h-10 flex items-center justify-center hover:bg-red-500 hover:text-white border-2 border-zinc-900 shadow-[2px_2px_0px_0px_rgba(24,24,27,1)]">🗑</button>
+                        <button onClick={() => handleExcluir(perfil.idPerfil)} className="bg-white text-zinc-900 w-10 h-10 flex items-center justify-center hover:bg-red-500 hover:text-white border-2 border-zinc-900 shadow-[2px_2px_0px_0px_rgba(24,24,27,1)] transition-colors">🗑</button>
                       )}
                     </div>
                   </td>

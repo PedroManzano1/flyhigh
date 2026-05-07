@@ -27,6 +27,9 @@ export default function ResponsaveisPage() {
   const [vinculos, setVinculos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // NOVO: Estado para a busca específica de responsável na área de vínculos
+  const [buscaResponsavelVinculo, setBuscaResponsavelVinculo] = useState('');
 
   const [error, setError] = useState(null);
 
@@ -104,7 +107,30 @@ export default function ResponsaveisPage() {
     }
   };
 
+  // NOVO: Função para excluir/desfazer um vínculo
+  const handleDesfazerVinculo = async (idAluno, idResponsavel) => {
+    if (!idAluno || !idResponsavel) return alert("IDs do vínculo não encontrados.");
+    
+    if (window.confirm("Deseja realmente desfazer este vínculo entre o aluno e o responsável?")) {
+      try {
+        // Envia os dois IDs na URL combinando com o backend
+        await api.delete(`/api/vinculos/${idAluno}/${idResponsavel}`);
+        alert("Vínculo desfeito com sucesso!");
+        carregarDados();
+      } catch (err) { 
+        alert("Erro ao desfazer o vínculo."); 
+        console.error(err);
+      }
+    }
+  };
+
   const responsaveisFiltrados = responsaveis.filter(resp => resp.nome?.toLowerCase().includes(searchTerm.toLowerCase()) || resp.cpf?.includes(searchTerm));
+  
+  // NOVO: Filtra os responsáveis para o select do formulário de vínculos
+  const responsaveisParaVinculo = responsaveis.filter(resp => 
+    resp.nome?.toLowerCase().includes(buscaResponsavelVinculo.toLowerCase()) || 
+    resp.cpf?.includes(buscaResponsavelVinculo)
+  );
 
   const formatarData = (dataString) => {
     if (!dataString) return '---';
@@ -172,25 +198,41 @@ export default function ResponsaveisPage() {
           <h2 className="font-black text-xl uppercase tracking-tighter italic border-b-4 border-zinc-900 pb-2 mb-6 flex items-center gap-3">
             <span className="text-2xl">🔗</span> Associar Aluno ao Responsável
           </h2>
+          
+          {/* NOVO: Campo para filtrar a lista do Select */}
+          <div className="mb-6">
+            <InputField 
+              label="Filtrar Responsável (Por Nome ou CPF)" 
+              name="buscaResponsavelVinculo" 
+              placeholder="Digite o nome ou CPF para facilitar a busca..." 
+              onChange={(e) => setBuscaResponsavelVinculo(e.target.value)} 
+              value={buscaResponsavelVinculo} 
+            />
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-6 items-end">
             <SelectField label="Responsável" name="id_responsavel" onChange={handleVinculoChange} value={vinculoData.id_responsavel}>
               <option value="">Selecione o adulto...</option>
-              {responsaveis.map(r => <option key={r.id_responsavel} value={r.id_responsavel}>{r.nome} (CPF: {r.cpf})</option>)}
+              {responsaveisParaVinculo.map(r => <option key={r.id_responsavel} value={r.id_responsavel}>{r.nome} (CPF: {r.cpf})</option>)}
             </SelectField>
+            
             <SelectField label="Aluno Matriculado" name="id_aluno" onChange={handleVinculoChange} value={vinculoData.id_aluno}>
               <option value="">Selecione o aluno...</option>
               {alunos.map(a => <option key={a.id_aluno} value={a.id_aluno}>{a.nome} (Matrícula: {a.numeroMatricula})</option>)}
             </SelectField>
+            
             <SelectField label="Grau de Parentesco" name="grauParentesco" onChange={handleVinculoChange} value={vinculoData.grauParentesco}>
               <option value="">Selecione...</option>
               <option value="Pai">Pai</option>
               <option value="Mãe">Mãe</option>
               <option value="Outro">Outro</option>
             </SelectField>
+            
             <SelectField label="Responsável Financeiro?" name="isResponsavelFinanceiro" onChange={handleVinculoChange} value={vinculoData.isResponsavelFinanceiro}>
               <option value="false">Não</option>
               <option value="true">Sim, paga as mensalidades</option>
             </SelectField>
+            
             <button type="submit" className="bg-zinc-900 text-sky-300 p-3 w-full h-[48px] font-black uppercase hover:bg-sky-300 hover:text-zinc-900 transition-all border-2 border-zinc-900">Vincular</button>
           </div>
         </form>
@@ -241,7 +283,7 @@ export default function ResponsaveisPage() {
                         <span className="text-xs text-zinc-400 italic font-normal">Nenhum aluno vinculado</span>
                       ) : (
                         vinculos.filter(v => v.responsavel?.id_responsavel === resp.id_responsavel).map((vinculo) => (
-                          <div key={vinculo.aluno?.id_aluno} className="flex items-center gap-2 border-2 border-zinc-900 bg-white px-2 py-1 shadow-[2px_2px_0px_0px_rgba(24,24,27,1)] w-max">
+                          <div key={vinculo.id_vinculo || vinculo.aluno?.id_aluno} className="flex items-center gap-2 border-2 border-zinc-900 bg-white px-2 py-1 shadow-[2px_2px_0px_0px_rgba(24,24,27,1)] w-max">
                             <span className="text-[10px] font-black uppercase text-zinc-900">{vinculo.aluno?.nome}</span>
                             <span className="text-[10px] text-zinc-900 bg-yellow-400 border border-zinc-900 px-1 font-black uppercase">{vinculo.grauParentesco}</span>
                             
@@ -249,6 +291,17 @@ export default function ResponsaveisPage() {
                               <span className="text-[10px] bg-emerald-100 text-emerald-800 border-2 border-emerald-800 px-1.5 py-0 font-black uppercase tracking-widest" title="Responsável Financeiro">
                                 💰 FIN
                               </span>
+                            )}
+
+                            {/* Botão Desfazer Vínculo */}
+                            {temPermissao('VINCULOS_WRITE') && (
+                              <button 
+                                onClick={() => handleDesfazerVinculo(vinculo.aluno.id_aluno, vinculo.responsavel.id_responsavel)} 
+                                className="ml-1 text-red-600 hover:text-white hover:bg-red-600 bg-red-100 border border-red-600 px-1 font-black text-[10px] transition-colors"
+                                title="Desfazer Vínculo"
+                              >
+                                X
+                              </button>
                             )}
                           </div>
                         ))
