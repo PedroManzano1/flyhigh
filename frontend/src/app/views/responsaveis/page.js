@@ -6,15 +6,15 @@ import { AuthContext } from '../../../context/authContext';
 
 const InputField = ({ label, name, placeholder, type = "text", onChange, value, className = "" }) => (
   <div className={className}>
-    <label className="block text-xs font-black text-zinc-800 uppercase tracking-widest mb-1">{label}</label>
-    <input type={type} name={name} value={value || ''} onChange={onChange} placeholder={placeholder} className="w-full p-3 border-2 border-zinc-900 rounded-none text-sm focus:ring-0 focus:border-yellow-400 bg-white shadow-[4px_4px_0px_0px_rgba(24,24,27,1)] transition-all focus:translate-x-[2px] focus:translate-y-[2px] focus:shadow-none outline-none" />
+    <label className="block text-xs font-black text-zinc-700 uppercase tracking-widest mb-2">{label}</label>
+    <input type={type} name={name} value={value || ''} onChange={onChange} placeholder={placeholder} className="w-full p-4 border border-zinc-300 rounded-xl text-lg font-bold text-zinc-900 focus:ring-4 focus:ring-yellow-400/20 outline-none transition-all bg-white shadow-sm" />
   </div>
 );
 
 const SelectField = ({ label, name, children, onChange, value, className = "" }) => (
   <div className={className}>
-    <label className="block text-xs font-black text-zinc-800 uppercase tracking-widest mb-1">{label}</label>
-    <select name={name} value={value || ''} onChange={onChange} className="w-full p-3 border-2 border-zinc-900 rounded-none text-sm focus:ring-0 focus:border-yellow-400 bg-white shadow-[4px_4px_0px_0px_rgba(24,24,27,1)] transition-all outline-none appearance-none">{children}</select>
+    <label className="block text-xs font-black text-zinc-700 uppercase tracking-widest mb-2">{label}</label>
+    <select name={name} value={value || ''} onChange={onChange} className="w-full p-4 border border-zinc-300 rounded-xl text-lg font-bold text-zinc-900 focus:ring-4 focus:ring-yellow-400/20 outline-none appearance-none bg-white cursor-pointer shadow-sm">{children}</select>
   </div>
 );
 
@@ -28,7 +28,7 @@ export default function ResponsaveisPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   
-  // NOVO: Estado para a busca específica de responsável na área de vínculos
+  // Estado para a busca específica de responsável na área de vínculos
   const [buscaResponsavelVinculo, setBuscaResponsavelVinculo] = useState('');
 
   const [error, setError] = useState(null);
@@ -107,13 +107,11 @@ export default function ResponsaveisPage() {
     }
   };
 
-  // NOVO: Função para excluir/desfazer um vínculo
   const handleDesfazerVinculo = async (idAluno, idResponsavel) => {
     if (!idAluno || !idResponsavel) return alert("IDs do vínculo não encontrados.");
     
     if (window.confirm("Deseja realmente desfazer este vínculo entre o aluno e o responsável?")) {
       try {
-        // Envia os dois IDs na URL combinando com o backend
         await api.delete(`/api/vinculos/${idAluno}/${idResponsavel}`);
         alert("Vínculo desfeito com sucesso!");
         carregarDados();
@@ -126,7 +124,6 @@ export default function ResponsaveisPage() {
 
   const responsaveisFiltrados = responsaveis.filter(resp => resp.nome?.toLowerCase().includes(searchTerm.toLowerCase()) || resp.cpf?.includes(searchTerm));
   
-  // NOVO: Filtra os responsáveis para o select do formulário de vínculos
   const responsaveisParaVinculo = responsaveis.filter(resp => 
     resp.nome?.toLowerCase().includes(buscaResponsavelVinculo.toLowerCase()) || 
     resp.cpf?.includes(buscaResponsavelVinculo)
@@ -140,21 +137,21 @@ export default function ResponsaveisPage() {
   };
 
   return (
-    <div className="p-10 bg-gray-100 min-h-screen text-zinc-900 font-sans">
+    <div className="p-10 bg-gray-50 min-h-screen text-zinc-900 font-sans">
       <header className="mb-12 flex items-center justify-between">
         <div>
-          <h1 className="text-4xl font-black uppercase tracking-tighter italic">Gerenciar Responsáveis</h1>
-          <div className="h-2 w-24 bg-yellow-400 mt-2"></div>
+          <h1 className="text-5xl font-black uppercase tracking-tighter italic text-zinc-900">Gerenciar Responsáveis</h1>
+          <div className="h-2 w-24 bg-yellow-400 mt-2 rounded-full"></div>
         </div>
-        <button onClick={() => router.push('/')} className="flex items-center gap-2 px-6 py-3 bg-zinc-900 text-white font-bold uppercase text-xs tracking-widest hover:bg-yellow-400 hover:text-zinc-900 transition-all shadow-[4px_4px_0px_0px_rgba(250,204,21,1)]">
-          <span>⌂</span> Voltar ao Início
+        <button onClick={() => router.push('/')} className="px-8 py-4 bg-zinc-900 text-white rounded-2xl font-black text-sm uppercase tracking-[0.2em] hover:bg-yellow-400 hover:text-zinc-900 transition-all shadow-xl">
+          Voltar ao Início
         </button>
       </header>
       
       {temPermissao('RESPONSAVEIS_WRITE') && (
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 xl:grid-cols-3 gap-10 mb-10">
-          <div className="bg-white p-8 border-4 border-zinc-900 shadow-[8px_8px_0px_0px_rgba(250,204,21,1)] space-y-6">
-            <h2 className="font-black text-lg uppercase border-b-4 border-yellow-400 pb-2 mb-4">01. Dados Pessoais</h2>
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 xl:grid-cols-3 gap-8 mb-10">
+          <div className="bg-white p-8 rounded-3xl border border-zinc-200 shadow-sm space-y-6">
+            <h2 className="font-black text-sm uppercase text-zinc-800 tracking-[0.2em] mb-4 border-b border-zinc-100 pb-2">01. Dados Pessoais</h2>
             <InputField label="Nome do Responsável" name="nome" placeholder="Ex: Mary Smith" onChange={handleChange} value={formData.nome} />
             <div className="grid grid-cols-2 gap-4">
               <InputField label="Nascimento" name="dataNascimento" type="date" onChange={handleChange} value={formData.dataNascimento} />
@@ -163,8 +160,8 @@ export default function ResponsaveisPage() {
             <InputField label="RG" name="rg" placeholder="Identidade" onChange={handleChange} value={formData.rg} />
           </div>
 
-          <div className="bg-white p-8 border-4 border-zinc-900 shadow-[8px_8px_0px_0px_rgba(24,24,27,1)] space-y-6">
-            <h2 className="font-black text-lg uppercase border-b-4 border-yellow-400 pb-2 mb-4">02. Localização</h2>
+          <div className="bg-white p-8 rounded-3xl border border-zinc-200 shadow-sm space-y-6">
+            <h2 className="font-black text-sm uppercase text-zinc-800 tracking-[0.2em] mb-4 border-b border-zinc-100 pb-2">02. Localização</h2>
             <div className="grid grid-cols-2 gap-4">
               <InputField label="Tel. Principal" name="telefonePrincipal" onChange={handleChange} value={formData.telefonePrincipal} />
               <InputField label="Tel. Reserva" name="telefoneSecundario" onChange={handleChange} value={formData.telefoneSecundario} />
@@ -178,28 +175,27 @@ export default function ResponsaveisPage() {
             <InputField label="Cidade" name="cidade" onChange={handleChange} value={formData.cidade} />
           </div>
 
-          <div className="bg-yellow-400 p-8 border-4 border-zinc-900 shadow-[8px_8px_0px_0px_rgba(24,24,27,1)] flex flex-col justify-between">
+          <div className="bg-yellow-400 p-10 rounded-3xl flex flex-col justify-between shadow-xl">
             <div>
-              <h2 className="font-black text-2xl uppercase mb-4 italic">Ground Control 🎧</h2>
-              <p className="font-bold text-zinc-900 text-sm leading-tight border-l-4 border-zinc-900 pl-4">
+              <h2 className="font-black text-3xl uppercase mb-4 italic text-zinc-900">Ground Control 🎧</h2>
+              <p className="font-black text-zinc-900 text-lg leading-snug">
                 Na FlyHigh, a família é a torre de controle dos nossos alunos. Revise o CPF e os contatos de emergência com atenção para garantir uma comunicação impecável em solo.
               </p>
             </div>
-            <div className="flex flex-col gap-4 mt-10">
-              <button type="submit" className="bg-zinc-900 text-white p-4 font-black uppercase tracking-[0.2em] hover:bg-white hover:text-zinc-900 transition-all border-2 border-zinc-900">Salvar Responsável</button>
-              <button type="button" onClick={() => setFormData(estadoInicialResp)} className="bg-transparent text-zinc-900 p-4 font-bold uppercase text-xs border-2 border-dashed border-zinc-900 hover:bg-white transition-all">Limpar Campos</button>
+            <div className="flex flex-col gap-3 mt-10">
+              <button type="submit" className="bg-zinc-900 text-white p-5 rounded-2xl font-black uppercase text-sm tracking-widest hover:bg-white hover:text-zinc-900 transition-all shadow-lg">Salvar Responsável</button>
+              <button type="button" onClick={() => setFormData(estadoInicialResp)} className="text-zinc-900 p-2 font-black uppercase text-xs hover:underline">Limpar Campos</button>
             </div>
           </div>
         </form>
       )}
 
       {temPermissao('VINCULOS_WRITE') && (
-        <form onSubmit={handleVinculoSubmit} className="bg-sky-100 p-8 border-4 border-zinc-900 shadow-[8px_8px_0px_0px_rgba(24,24,27,1)] mb-16">
-          <h2 className="font-black text-xl uppercase tracking-tighter italic border-b-4 border-zinc-900 pb-2 mb-6 flex items-center gap-3">
+        <form onSubmit={handleVinculoSubmit} className="bg-sky-50 p-8 rounded-3xl border border-sky-200 shadow-sm mb-16">
+          <h2 className="font-black text-xl uppercase tracking-tighter italic text-sky-900 flex items-center gap-3 mb-6 border-b border-sky-200 pb-4">
             <span className="text-2xl">🔗</span> Associar Aluno ao Responsável
           </h2>
           
-          {/* NOVO: Campo para filtrar a lista do Select */}
           <div className="mb-6">
             <InputField 
               label="Filtrar Responsável (Por Nome ou CPF)" 
@@ -218,7 +214,7 @@ export default function ResponsaveisPage() {
             
             <SelectField label="Aluno Matriculado" name="id_aluno" onChange={handleVinculoChange} value={vinculoData.id_aluno}>
               <option value="">Selecione o aluno...</option>
-              {alunos.map(a => <option key={a.id_aluno} value={a.id_aluno}>{a.nome} (Matrícula: {a.numeroMatricula})</option>)}
+              {alunos.map(a => <option key={a.id_aluno} value={a.id_aluno}>{a.nome} (Matr.: {a.numeroMatricula})</option>)}
             </SelectField>
             
             <SelectField label="Grau de Parentesco" name="grauParentesco" onChange={handleVinculoChange} value={vinculoData.grauParentesco}>
@@ -233,62 +229,62 @@ export default function ResponsaveisPage() {
               <option value="true">Sim, paga as mensalidades</option>
             </SelectField>
             
-            <button type="submit" className="bg-zinc-900 text-sky-300 p-3 w-full h-[48px] font-black uppercase hover:bg-sky-300 hover:text-zinc-900 transition-all border-2 border-zinc-900">Vincular</button>
+            <button type="submit" className="bg-zinc-900 text-sky-300 p-4 rounded-xl font-black uppercase text-sm tracking-widest hover:bg-sky-400 hover:text-zinc-900 transition-all shadow-md h-[62px]">Vincular</button>
           </div>
         </form>
       )}
       
-      <section className="bg-white border-4 border-zinc-900 shadow-[12px_12px_0px_0px_rgba(24,24,27,1)] overflow-hidden">
-        <div className="bg-zinc-900 p-6 flex justify-between items-center">
-          <h2 className="font-black text-xl text-white uppercase tracking-tighter italic">Database: Responsáveis & Vínculos</h2>
-          <input type="text" placeholder="PESQUISAR..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full max-w-md pl-4 py-2 bg-white text-xs font-bold uppercase focus:outline-none" />
+      <section className="bg-white rounded-[2.5rem] shadow-md border border-zinc-200 overflow-hidden">
+        <div className="p-8 border-b border-zinc-200 flex justify-between items-center bg-zinc-100/30">
+          <h2 className="font-black text-lg uppercase text-zinc-800 tracking-tighter">Database: Responsáveis & Vínculos</h2>
+          <input type="text" placeholder="PESQUISAR..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-96 px-6 py-4 rounded-2xl border border-zinc-300 text-sm font-bold text-zinc-900 focus:outline-none focus:ring-4 focus:ring-yellow-400/20" />
         </div>
-        <div className="overflow-x-auto p-4">
-          <table className="w-full text-left min-w-[1600px]">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
              <thead>
-              <tr className="border-b-4 border-zinc-900 bg-gray-50">
-                <th className="p-4 font-black uppercase text-xs text-zinc-700">ID</th>
-                <th className="p-4 font-black uppercase text-xs text-zinc-900">Nome do Responsável</th>
-                <th className="p-4 font-black uppercase text-xs text-zinc-900">Nascimento</th>
-                <th className="p-4 font-black uppercase text-xs text-zinc-900">Alunos Vinculados</th>
-                <th className="p-4 font-black uppercase text-xs text-zinc-900">Documentos</th>
-                <th className="p-4 font-black uppercase text-xs text-zinc-900">Endereço Completo</th>
-                <th className="p-4 font-black uppercase text-xs text-zinc-900">Contatos</th>
-                <th className="p-4 font-black uppercase text-xs text-center text-zinc-900">Gestão</th>
+              <tr className="bg-zinc-50 border-b border-zinc-200">
+                <th className="p-6 font-black uppercase text-xs text-zinc-600 tracking-widest">ID</th>
+                <th className="p-6 font-black uppercase text-xs text-zinc-800 tracking-widest">Nome do Responsável</th>
+                <th className="p-6 font-black uppercase text-xs text-zinc-800 tracking-widest">Nascimento</th>
+                <th className="p-6 font-black uppercase text-xs text-zinc-800 tracking-widest">Alunos Vinculados</th>
+                <th className="p-6 font-black uppercase text-xs text-zinc-800 tracking-widest">Documentos</th>
+                <th className="p-6 font-black uppercase text-xs text-zinc-800 tracking-widest">Endereço Completo</th>
+                <th className="p-6 font-black uppercase text-xs text-zinc-800 tracking-widest">Contatos</th>
+                <th className="p-6 font-black uppercase text-xs text-center text-zinc-800 tracking-widest">Gestão</th>
               </tr>
             </thead>
-            <tbody className="font-bold text-base">
+            <tbody>
               {!loading && responsaveisFiltrados.map(resp => (
-                <tr key={resp.id_responsavel} className="border-b-2 border-zinc-100 hover:bg-yellow-50 transition-colors">
+                <tr key={resp.id_responsavel} className="border-b border-zinc-100 hover:bg-yellow-50/50 transition-colors">
                   
                   {/* ID */}
-                  <td className="p-4">
-                    <span className="bg-zinc-900 text-white px-3 py-1.5 text-sm font-mono">
+                  <td className="p-6 align-top">
+                    <span className="font-mono font-black text-zinc-400 text-base">
                       #{resp.id_responsavel}
                     </span>
                   </td>
                   
                   {/* NOME */}
-                  <td className="p-4 uppercase whitespace-nowrap">{resp.nome}</td>
+                  <td className="p-6 align-top font-black text-zinc-900 uppercase text-lg">{resp.nome}</td>
                   
                   {/* NASCIMENTO */}
-                  <td className="p-4 whitespace-nowrap text-zinc-900">
+                  <td className="p-6 align-top font-bold text-zinc-700 text-base">
                     {formatarData(resp.dataNascimento)}
                   </td>
                   
                   {/* VÍNCULOS */}
-                  <td className="p-4">
+                  <td className="p-6 align-top">
                     <div className="flex flex-col gap-2">
                       {vinculos.filter(v => v.responsavel?.id_responsavel === resp.id_responsavel).length === 0 ? (
-                        <span className="text-xs text-zinc-400 italic font-normal">Nenhum aluno vinculado</span>
+                        <span className="text-sm font-bold text-zinc-400 italic">Nenhum aluno vinculado</span>
                       ) : (
                         vinculos.filter(v => v.responsavel?.id_responsavel === resp.id_responsavel).map((vinculo) => (
-                          <div key={vinculo.id_vinculo || vinculo.aluno?.id_aluno} className="flex items-center gap-2 border-2 border-zinc-900 bg-white px-2 py-1 shadow-[2px_2px_0px_0px_rgba(24,24,27,1)] w-max">
-                            <span className="text-[10px] font-black uppercase text-zinc-900">{vinculo.aluno?.nome}</span>
-                            <span className="text-[10px] text-zinc-900 bg-yellow-400 border border-zinc-900 px-1 font-black uppercase">{vinculo.grauParentesco}</span>
+                          <div key={vinculo.id_vinculo || vinculo.aluno?.id_aluno} className="flex items-center gap-2 bg-white border border-zinc-200 px-3 py-2 rounded-xl shadow-sm w-max">
+                            <span className="text-xs font-black uppercase text-zinc-900">{vinculo.aluno?.nome}</span>
+                            <span className="text-[10px] text-zinc-900 bg-yellow-400 px-2 py-0.5 rounded-md font-black uppercase">{vinculo.grauParentesco}</span>
                             
                             {vinculo.isResponsavelFinanceiro && (
-                              <span className="text-[10px] bg-emerald-100 text-emerald-800 border-2 border-emerald-800 px-1.5 py-0 font-black uppercase tracking-widest" title="Responsável Financeiro">
+                              <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-md font-black uppercase tracking-widest" title="Responsável Financeiro">
                                 💰 FIN
                               </span>
                             )}
@@ -297,7 +293,7 @@ export default function ResponsaveisPage() {
                             {temPermissao('VINCULOS_WRITE') && (
                               <button 
                                 onClick={() => handleDesfazerVinculo(vinculo.aluno.id_aluno, vinculo.responsavel.id_responsavel)} 
-                                className="ml-1 text-red-600 hover:text-white hover:bg-red-600 bg-red-100 border border-red-600 px-1 font-black text-[10px] transition-colors"
+                                className="ml-2 text-red-400 hover:text-white hover:bg-red-500 bg-red-50 px-2 py-0.5 rounded-md font-black text-[10px] transition-colors"
                                 title="Desfazer Vínculo"
                               >
                                 X
@@ -310,39 +306,40 @@ export default function ResponsaveisPage() {
                   </td>
 
                   {/* DOCUMENTOS */}
-                  <td className="p-4 whitespace-nowrap">
-                    <div className="flex flex-col gap-1 text-xs font-mono font-bold">
-                      <span className="text-zinc-700">CPF: {resp.cpf || '---'}</span>
-                      <span className="text-zinc-700">RG: {resp.rg || '---'}</span>
+                  <td className="p-6 align-top">
+                    <div className="flex flex-col gap-1 text-sm font-bold text-zinc-700">
+                      <span>CPF: {resp.cpf || '---'}</span>
+                      <span>RG: {resp.rg || '---'}</span>
                     </div>
                   </td>
                   
                   {/* ENDEREÇO */}
-                  <td className="p-4 text-sm text-zinc-800 max-w-[300px] truncate" title={`${resp.endereco?.logradouro || '---'}, ${resp.endereco?.numero || 'S/N'} - ${resp.endereco?.bairro || '---'}, ${resp.endereco?.cidade || '---'} - CEP: ${resp.endereco?.cep || '---'}`}>
+                  <td className="p-6 align-top text-sm font-bold text-zinc-800 max-w-[250px]">
                     {resp.endereco ? (
-                      <div className="flex flex-col">
-                        <span className="uppercase text-zinc-900 font-bold truncate mb-1">
+                      <div className="flex flex-col gap-1">
+                        <span className="uppercase text-zinc-900">
                           {resp.endereco.logradouro}, {resp.endereco.numero || 'S/N'}
                         </span>
-                        <span className="text-xs text-zinc-700 font-bold truncate">
-                          {resp.endereco.bairro} - {resp.endereco.cidade} | CEP: {resp.endereco.cep}
+                        <span className="text-zinc-600">
+                          {resp.endereco.bairro} - {resp.endereco.cidade}
                         </span>
+                        <span className="text-zinc-500 text-xs">CEP: {resp.endereco.cep}</span>
                       </div>
                     ) : (
-                      <span className="text-zinc-400 italic font-normal">Endereço não cadastrado</span>
+                      <span className="text-zinc-400 italic">Endereço não cadastrado</span>
                     )}
                   </td>
                   
                   {/* CONTATOS */}
-                  <td className="p-4 text-sm whitespace-nowrap">
-                    <div className="flex flex-col gap-2">
-                      <div className="flex items-center gap-2 font-mono font-bold text-zinc-800">
-                        <span className="bg-emerald-100 text-emerald-700 px-1.5 py-0.5 font-black text-[10px]">PRI</span>
+                  <td className="p-6 align-top">
+                    <div className="flex flex-col gap-3 font-black text-sm">
+                      <div className="flex items-center gap-2 text-zinc-900">
+                        <span className="bg-emerald-100 text-emerald-700 px-2 py-1 rounded-md text-[10px] tracking-widest">PRI</span>
                         {resp.telefonePrincipal || '(---)'}
                       </div>
                       {resp.telefoneSecundario && (
-                        <div className="flex items-center gap-2 font-mono font-bold text-zinc-800">
-                          <span className="bg-zinc-200 text-zinc-700 px-1.5 py-0.5 font-black text-[10px]">SEC</span>
+                        <div className="flex items-center gap-2 text-zinc-700">
+                          <span className="bg-zinc-200 text-zinc-600 px-2 py-1 rounded-md text-[10px] tracking-widest">SEC</span>
                           {resp.telefoneSecundario}
                         </div>
                       )}
@@ -350,13 +347,13 @@ export default function ResponsaveisPage() {
                   </td>
                   
                   {/* GESTÃO */}
-                  <td className="p-4">
-                    <div className="flex justify-center gap-2">
+                  <td className="p-6 align-middle">
+                    <div className="flex justify-center gap-3">
                       {temPermissao('RESPONSAVEIS_WRITE') && (
-                        <button onClick={() => router.push(`/views/responsaveis/editar?id=${resp.id_responsavel}`)} className="bg-zinc-900 text-white w-10 h-10 flex items-center justify-center hover:bg-yellow-400 hover:text-zinc-900 border-2 border-zinc-900">✎</button>
+                        <button onClick={() => router.push(`/views/responsaveis/editar?id=${resp.id_responsavel}`)} className="w-12 h-12 flex items-center justify-center bg-zinc-900 text-white hover:bg-yellow-400 hover:text-zinc-900 rounded-xl transition-all shadow-md text-xl">✎</button>
                       )}
                       {temPermissao('RESPONSAVEIS_DELETE') && (
-                        <button onClick={() => handleExcluir(resp.id_responsavel)} className="bg-white text-zinc-900 w-10 h-10 flex items-center justify-center hover:bg-red-500 hover:text-white border-2 border-zinc-900 shadow-[2px_2px_0px_0px_rgba(24,24,27,1)]">🗑</button>
+                        <button onClick={() => handleExcluir(resp.id_responsavel)} className="w-12 h-12 flex items-center justify-center bg-white text-zinc-900 border-2 border-zinc-200 hover:bg-red-600 hover:text-white rounded-xl transition-all shadow-md text-xl">🗑</button>
                       )}
                     </div>
                   </td>
