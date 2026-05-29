@@ -14,8 +14,8 @@ import java.io.Serializable;
 public class NotaKey implements Serializable {
 
     @Column(name = "id_avaliacao")
-    private Integer avaliacaoId;
+    private Long avaliacaoId;
 
     @Column(name = "id_aluno")
-    private Integer alunoId;
+    private Long alunoId;
 }

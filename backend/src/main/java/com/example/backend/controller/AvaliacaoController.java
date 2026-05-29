@@ -2,41 +2,57 @@ package com.example.backend.controller;
 
 import com.example.backend.model.Avaliacao;
 import com.example.backend.service.AvaliacaoService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/avaliacoes")
+@CrossOrigin(origins = "http://localhost:3000")
 public class AvaliacaoController {
 
-    private final AvaliacaoService avaliacaoService;
-
-    public AvaliacaoController(AvaliacaoService avaliacaoService) {
-        this.avaliacaoService = avaliacaoService;
-    }
+    @Autowired
+    private AvaliacaoService service;
 
     @PostMapping
-    public ResponseEntity<Avaliacao> criarAvaliacao(@RequestBody Avaliacao avaliacao) {
-        Avaliacao novaAvaliacao = avaliacaoService.salvarAvaliacao(avaliacao);
-        return ResponseEntity.ok(novaAvaliacao);
+    public Avaliacao create(@RequestBody Avaliacao avaliacao) {
+        return service.salvar(avaliacao);
+    }
+
+    @GetMapping
+    public List<Avaliacao> getAll() {
+        return service.listarTodos();
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Avaliacao> buscarPorId(@PathVariable Integer id) {
-        Avaliacao avaliacao = avaliacaoService.buscarPorId(id);
-        return ResponseEntity.ok(avaliacao);
+    public ResponseEntity<Avaliacao> getById(@PathVariable Long id) {
+        return service.buscarPorId(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/turma/{idTurma}")
-    public ResponseEntity<List<Avaliacao>> listarPorTurma(@PathVariable Integer idTurma) {
-        List<Avaliacao> avaliacoes = avaliacaoService.buscarAvaliacoesPorTurma(idTurma);
-        return ResponseEntity.ok(avaliacoes);
+    public ResponseEntity<List<Avaliacao>> getByTurma(@PathVariable Long idTurma) {
+        return ResponseEntity.ok(service.buscarPorTurma(idTurma));
+    }
+
+    @PutMapping("/editar/{id}")
+    public ResponseEntity<Avaliacao> update(@PathVariable Long id, @RequestBody Avaliacao avaliacao) {
+        return service.buscarPorId(id).map(existente -> {
+            avaliacao.setId_avaliacao(id); // Setando o ID da URL na entidade
+            return ResponseEntity.ok(service.salvar(avaliacao));
+        }).orElse(ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletarAvaliacao(@PathVariable Integer id) {
-        avaliacaoService.deletarAvaliacao(id);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        if (service.buscarPorId(id).isPresent()) {
+            service.excluir(id);
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.notFound().build();
     }
 }

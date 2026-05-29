@@ -4,24 +4,22 @@ import jakarta.persistence.*;
 import lombok.Data;
 import java.time.LocalDate;
 
-@Data
 @Entity
-@Table(name = "AULA")
+@Table(name = "aulas") // Padronizado no plural minúsculo como "turmas", ou mude para "AULA" se preferir
+@Data
 public class Aula {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id_aula")
-    private Integer idAula;
+    private Long id_aula; // Mudado para Long e com underline para seguir o seu padrão
 
-    @Column(name = "dataAula")
+    @Column(name = "data_aula")
     private LocalDate dataAula;
 
-    @Column(name = "conteudoLecionado")
+    @Column(name = "conteudo_lecionado")
     private String conteudoLecionado;
 
-    // Relacionamento com Turma
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_turma", referencedColumnName = "id_turma")
+    @ManyToOne
+    @JoinColumn(name = "id_turma")
     private Turma turma;
 }

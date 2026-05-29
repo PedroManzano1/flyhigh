@@ -3,11 +3,17 @@ package com.example.backend.repository;
 import com.example.backend.model.Frequencia;
 import com.example.backend.model.FrequenciaKey;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
 import java.util.List;
 
-@Repository
 public interface FrequenciaRepository extends JpaRepository<Frequencia, FrequenciaKey> {
-    List<Frequencia> findByAula_IdAula(Integer idAula);
-    List<Frequencia> findByAluno_IdAluno(Integer idAluno);
+
+    @Query("SELECT f FROM Frequencia f WHERE f.aluno.id_aluno = :idAluno")
+    List<Frequencia> findByAlunoId(@Param("idAluno") Long idAluno);
+
+    // Query corrigida: Busca pela AULA em vez da TURMA
+    @Query("SELECT f FROM Frequencia f WHERE f.aula.id_aula = :idAula")
+    List<Frequencia> findByAulaId(@Param("idAula") Long idAula);
 }

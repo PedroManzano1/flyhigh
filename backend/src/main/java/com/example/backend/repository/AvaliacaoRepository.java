@@ -2,12 +2,13 @@ package com.example.backend.repository;
 
 import com.example.backend.model.Avaliacao;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
 import java.util.List;
 
-@Repository
-public interface AvaliacaoRepository extends JpaRepository<Avaliacao, Integer> {
+public interface AvaliacaoRepository extends JpaRepository<Avaliacao, Long> {
 
-    // Busca todas as avaliações de uma turma específica
-    List<Avaliacao> findByTurma_IdTurma(Integer idTurma);
+    @Query("SELECT a FROM Avaliacao a WHERE a.turma.id_turma = :idTurma")
+    List<Avaliacao> findByTurmaId(@Param("idTurma") Long idTurma);
 }

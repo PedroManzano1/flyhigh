@@ -2,35 +2,42 @@ package com.example.backend.controller;
 
 import com.example.backend.model.Nota;
 import com.example.backend.service.NotaService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/notas")
+@CrossOrigin(origins = "http://localhost:3000")
 public class NotaController {
 
-    private final NotaService notaService;
+    @Autowired
+    private NotaService service;
 
-    public NotaController(NotaService notaService) {
-        this.notaService = notaService;
-    }
-
+    // Salvar uma única nota
     @PostMapping
     public ResponseEntity<Nota> registrarNota(@RequestBody Nota nota) {
-        Nota notaSalva = notaService.salvarNota(nota);
-        return ResponseEntity.ok(notaSalva);
+        return ResponseEntity.ok(service.salvarNota(nota));
     }
 
+    // Rota otimizada para o professor lançar as notas da sala toda de uma vez
+    @PostMapping("/lote")
+    public ResponseEntity<List<Nota>> registrarNotasEmLote(@RequestBody List<Nota> notas) {
+        return ResponseEntity.ok(service.salvarNotasEmLote(notas));
+    }
+
+    // Listar boletim de um aluno
     @GetMapping("/aluno/{idAluno}")
-    public ResponseEntity<List<Nota>> listarNotasPorAluno(@PathVariable Integer idAluno) {
-        List<Nota> notas = notaService.buscarNotasPorAluno(idAluno);
-        return ResponseEntity.ok(notas);
+    public ResponseEntity<List<Nota>> listarNotasPorAluno(@PathVariable Long idAluno) {
+        return ResponseEntity.ok(service.buscarNotasPorAluno(idAluno));
     }
 
+    // Listar espelho de notas de uma prova específica
     @GetMapping("/avaliacao/{idAvaliacao}")
-    public ResponseEntity<List<Nota>> listarNotasPorAvaliacao(@PathVariable Integer idAvaliacao) {
-        List<Nota> notas = notaService.buscarNotasPorAvaliacao(idAvaliacao);
-        return ResponseEntity.ok(notas);
+    public ResponseEntity<List<Nota>> listarNotasPorAvaliacao(@PathVariable Long idAvaliacao) {
+        return ResponseEntity.ok(service.buscarNotasPorAvaliacao(idAvaliacao));
     }
 }

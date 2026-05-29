@@ -1,28 +1,26 @@
 package com.example.backend.model;
 
-import com.example.backend.model.Aluno;
-import com.example.backend.model.NotaKey;
 import jakarta.persistence.*;
 import lombok.Data;
 
-@Data
 @Entity
-@Table(name = "NOTA")
+@Table(name = "notas")
+@Data
 public class Nota {
 
     @EmbeddedId
     private NotaKey id = new NotaKey();
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @MapsId("avaliacaoId")
     @JoinColumn(name = "id_avaliacao")
-    private Avaliacao avaliacao; // Assumindo que você já tem a entidade Avaliacao
+    private Avaliacao avaliacao;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @MapsId("alunoId")
     @JoinColumn(name = "id_aluno")
     private Aluno aluno;
 
-    @Column(name = "valorObtido")
+    @Column(name = "valor_obtido")
     private Double valorObtido;
 }

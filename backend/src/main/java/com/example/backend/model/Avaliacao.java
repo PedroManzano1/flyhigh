@@ -4,27 +4,25 @@ import jakarta.persistence.*;
 import lombok.Data;
 import java.time.LocalDate;
 
-@Data
 @Entity
-@Table(name = "AVALIACAO")
+@Table(name = "avaliacoes")
+@Data
 public class Avaliacao {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id_avaliacao")
-    private Integer idAvaliacao;
+    private Long id_avaliacao;
 
     @Column(name = "titulo")
     private String titulo;
 
-    @Column(name = "notaMaxima")
+    @Column(name = "nota_maxima")
     private Double notaMaxima;
 
     @Column(name = "data")
     private LocalDate data;
 
-    // Relacionamento com Turma
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_turma", referencedColumnName = "id_turma")
+    @ManyToOne
+    @JoinColumn(name = "id_turma")
     private Turma turma;
 }

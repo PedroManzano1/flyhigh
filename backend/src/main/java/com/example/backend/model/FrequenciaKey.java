@@ -14,8 +14,8 @@ import java.io.Serializable;
 public class FrequenciaKey implements Serializable {
 
     @Column(name = "id_aula")
-    private Integer aulaId;
+    private Long aulaId;
 
     @Column(name = "id_aluno")
-    private Integer alunoId;
+    private Long alunoId;
 }
