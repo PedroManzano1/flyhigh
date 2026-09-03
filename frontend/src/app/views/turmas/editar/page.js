@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import api from '../../../../utils/api';
 import { useRouter, useSearchParams } from 'next/navigation'; 
 
@@ -19,7 +19,7 @@ const SelectField = ({ label, name, children, onChange, value }) => (
   </div>
 );
 
-export default function EditarTurmaPage() {
+function EditarTurmaPageConteudo() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const id = searchParams.get('id');
@@ -171,5 +171,18 @@ export default function EditarTurmaPage() {
         </div>
       </form>
     </div>
+  );
+}
+
+// useSearchParams exige um limite de Suspense no App Router do Next.
+export default function EditarTurmaPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <span className="font-black uppercase tracking-widest animate-pulse text-zinc-800 text-xl">Carregando Dados da Turma...</span>
+      </div>
+    }>
+      <EditarTurmaPageConteudo />
+    </Suspense>
   );
 }

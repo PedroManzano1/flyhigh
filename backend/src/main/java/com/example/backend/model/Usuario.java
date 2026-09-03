@@ -1,4 +1,6 @@
 package com.example.backend.model;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.Data;
 import org.springframework.security.core.GrantedAuthority;
@@ -19,6 +21,9 @@ public class Usuario implements UserDetails {
 
     @Column(unique = true)
     private String login;
+
+    // A senha (hash) nunca deve trafegar do backend para o frontend.
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String senha;
     private String nome;
     private String status; // Ex: "ATIVO", "INATIVO"
@@ -29,6 +34,7 @@ public class Usuario implements UserDetails {
     private Perfil perfil;
 
     // --- MÉTODOS DO SPRING SECURITY (UserDetails) ---
+    @JsonIgnore
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         List<SimpleGrantedAuthority> authorities = new ArrayList<>();
@@ -51,21 +57,27 @@ public class Usuario implements UserDetails {
         return authorities;
     }
 
+    @JsonIgnore
     @Override
     public String getPassword() { return this.senha; }
 
+    @JsonIgnore
     @Override
     public String getUsername() { return this.login; }
 
+    @JsonIgnore
     @Override
     public boolean isAccountNonExpired() { return true; }
 
+    @JsonIgnore
     @Override
     public boolean isAccountNonLocked() { return "ATIVO".equalsIgnoreCase(this.status); }
 
+    @JsonIgnore
     @Override
     public boolean isCredentialsNonExpired() { return true; }
 
+    @JsonIgnore
     @Override
     public boolean isEnabled() { return "ATIVO".equalsIgnoreCase(this.status); }
 }

@@ -11,7 +11,8 @@ const InputField = ({ label, name, placeholder, type = "text", onChange, value, 
   </div>
 );
 
-const MODULOS = ["USUARIOS", "ALUNOS", "RESPONSAVEIS", "CURSOS", "TURMAS", "VINCULOS", "PERFIS", "RECADOS"];
+const MODULOS = ["USUARIOS", "ALUNOS", "RESPONSAVEIS", "CURSOS", "TURMAS", "VINCULOS",
+  "PERFIS", "RECADOS", "CONTRATOS", "FREQUENCIAS", "AVALIACOES"];
 
 export default function PerfisPage() {
   const router = useRouter();

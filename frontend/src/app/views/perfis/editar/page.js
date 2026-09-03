@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import api from '../../../../utils/api'; 
 import { useRouter, useSearchParams } from 'next/navigation'; 
 
@@ -14,9 +14,17 @@ const InputField = ({ label, name, placeholder, type = "text", onChange, value, 
   </div>
 );
 
-const MODULOS = ["USUARIOS", "ALUNOS", "RESPONSAVEIS", "CURSOS", "TURMAS", "VINCULOS", "PERFIS", "RECADOS"];
+const MODULOS = ["USUARIOS", "ALUNOS", "RESPONSAVEIS", "CURSOS", "TURMAS", "VINCULOS",
+  "PERFIS", "RECADOS", "CONTRATOS", "FREQUENCIAS", "AVALIACOES"];
 
-export default function EditarPerfilPage() {
+const ROTULOS_MODULO = {
+  VINCULOS: '🔗 VÍNCULOS (FAMÍLIA)',
+  CONTRATOS: '📄 CONTRATOS (MATRÍCULAS)',
+  FREQUENCIAS: '🗓️ FREQUÊNCIAS (FALTAS)',
+  AVALIACOES: '📝 AVALIAÇÕES (NOTAS)'
+};
+
+function EditarPerfilPageConteudo() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const id = searchParams.get('id');
@@ -163,7 +171,7 @@ export default function EditarPerfilPage() {
                 {MODULOS.map((modulo, index) => (
                   <tr key={modulo} className={`border-b border-zinc-100 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} hover:bg-yellow-50/50 transition-colors`}>
                     <td className="p-4 font-black text-sm text-zinc-800 tracking-wider">
-                      {modulo === 'VINCULOS' ? '🔗 VÍNCULOS (FAMÍLIA)' : `📁 ${modulo}`}
+                      {ROTULOS_MODULO[modulo] || `📁 ${modulo}`}
                     </td>
                     <td className="p-4 text-center">
                       <input type="checkbox" checked={permissoes[modulo].podeLer} onChange={() => handleCheckboxChange(modulo, 'podeLer')} className="w-6 h-6 accent-zinc-900 cursor-pointer" />
@@ -191,5 +199,18 @@ export default function EditarPerfilPage() {
         </div>
       </form>
     </div>
+  );
+}
+
+// useSearchParams exige um limite de Suspense no App Router do Next.
+export default function EditarPerfilPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <span className="font-black uppercase tracking-widest animate-pulse text-zinc-800 text-xl">Carregando Matriz de Acesso...</span>
+      </div>
+    }>
+      <EditarPerfilPageConteudo />
+    </Suspense>
   );
 }

@@ -152,6 +152,36 @@ export default function Home() {
             </div>
           )}
 
+          {temPermissao('CONTRATOS_READ') && (
+            <Link href="/views/matriculas" className="group h-full">
+              <div className="bg-zinc-50 p-8 rounded-3xl border border-zinc-200 shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-300 h-full flex flex-col">
+                <div className="flex justify-between items-start mb-8 w-full">
+                  <div className="text-4xl bg-white shadow-sm p-4 rounded-2xl border border-zinc-100">📄</div>
+                  <span className="text-zinc-300 text-3xl group-hover:text-yellow-500 group-hover:translate-x-2 transition-all flex-shrink-0">&rarr;</span>
+                </div>
+                <div className="flex flex-col flex-grow justify-between">
+                  <h3 className="text-2xl font-black text-zinc-900 mb-3 uppercase tracking-tight">Matrículas</h3>
+                  <p className="text-zinc-500 font-bold mt-2 text-sm leading-relaxed">Vincule alunos às turmas. Tela provisória até a Estória 7 (contratos).</p>
+                </div>
+              </div>
+            </Link>
+          )}
+
+          {temPermissao('FREQUENCIAS_READ') && (
+            <Link href="/views/faltas" className="group h-full">
+              <div className="bg-white p-8 rounded-3xl border border-zinc-200 shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-300 h-full flex flex-col">
+                <div className="flex justify-between items-start mb-8 w-full">
+                  <div className="text-4xl bg-zinc-50 p-4 rounded-2xl border border-zinc-100">📋</div>
+                  <span className="text-zinc-300 text-3xl group-hover:text-red-500 group-hover:translate-x-2 transition-all flex-shrink-0">&rarr;</span>
+                </div>
+                <div className="flex flex-col flex-grow justify-between">
+                  <h3 className="text-2xl font-black text-zinc-900 mb-3 uppercase tracking-tight group-hover:text-red-500 transition-colors">Controle de Faltas</h3>
+                  <p className="text-zinc-500 font-bold mt-2 text-sm leading-relaxed">Registre o diário de classe, faça a chamada e acompanhe a assiduidade.</p>
+                </div>
+              </div>
+            </Link>
+          )}
+
           {temPermissao('RECADOS_READ') && (
             <Link href="/views/recados" className="group h-full">
               <div className="bg-emerald-400 p-8 rounded-3xl border border-emerald-300 shadow-md hover:shadow-xl hover:-translate-y-2 transition-all duration-300 h-full flex flex-col">

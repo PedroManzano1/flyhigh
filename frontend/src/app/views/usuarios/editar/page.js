@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import api from '../../../../utils/api';
 
@@ -34,7 +34,7 @@ const SelectField = ({ label, name, children, onChange, value, required = false 
   </div>
 );
 
-export default function EditarUsuarioPage() {
+function EditarUsuarioPageConteudo() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const id = searchParams.get('id');
@@ -137,5 +137,18 @@ export default function EditarUsuarioPage() {
         </form>
       </div>
     </div>
+  );
+}
+
+// useSearchParams exige um limite de Suspense no App Router do Next.
+export default function EditarUsuarioPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <span className="font-black uppercase tracking-widest animate-pulse text-zinc-800 text-xl">Carregando Dados do Usuário...</span>
+      </div>
+    }>
+      <EditarUsuarioPageConteudo />
+    </Suspense>
   );
 }

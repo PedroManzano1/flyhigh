@@ -52,8 +52,8 @@ export default function RecadosPage() {
       titulo: formData.titulo, 
       mensagem: formData.mensagem, 
       dataExpiracao: formData.dataExpiracao || null, 
-      arquivoAnexo: formData.arquivoAnexo,
-      usuarioAutor: { idUsuario: user?.idUsuario || user?.id_usuario } 
+      arquivoAnexo: formData.arquivoAnexo || null
+      // O autor é definido no backend a partir do usuário autenticado (token).
     };
 
     try {
@@ -70,7 +70,14 @@ export default function RecadosPage() {
     }
   };
 
-  const recadosFiltrados = recados.filter(recado => recado.titulo?.toLowerCase().includes(searchTerm.toLowerCase()) || recado.mensagem?.toLowerCase().includes(searchTerm.toLowerCase()));
+  // recado expirado não aparece para quem tem apenas leitura;
+  // e o mural é sempre ordenado do mais recente para o mais antigo.
+  const agora = new Date();
+  const hojeISO = `${agora.getFullYear()}-${String(agora.getMonth() + 1).padStart(2, '0')}-${String(agora.getDate()).padStart(2, '0')}`;
+  const recadosFiltrados = recados
+    .filter(recado => temPermissao('RECADOS_WRITE') || !recado.dataExpiracao || recado.dataExpiracao >= hojeISO)
+    .filter(recado => recado.titulo?.toLowerCase().includes(searchTerm.toLowerCase()) || recado.mensagem?.toLowerCase().includes(searchTerm.toLowerCase()))
+    .sort((a, b) => String(b.dataPublicacao || '').localeCompare(String(a.dataPublicacao || '')));
 
   return (
     <div className="p-10 bg-gray-50 min-h-screen text-zinc-900 font-sans">
@@ -135,10 +142,15 @@ export default function RecadosPage() {
                 <article key={recado.id_recado} className="bg-white border border-zinc-200 rounded-3xl shadow-sm hover:-translate-y-2 hover:shadow-xl transition-all duration-300 flex flex-col overflow-hidden">
                   
                   {/* Título do Recado */}
-                  <div className="bg-yellow-400/10 p-6 border-b border-yellow-400/20 flex justify-between items-start">
+                  <div className="bg-yellow-400/10 p-6 border-b border-yellow-400/20 flex justify-between items-start gap-3">
                     <h3 className="font-black text-xl uppercase leading-tight text-zinc-900">
                       {recado.titulo}
                     </h3>
+                    {recado.dataExpiracao && recado.dataExpiracao < hojeISO && (
+                      <span className="shrink-0 bg-zinc-900 text-white px-3 py-1.5 rounded-lg font-black text-[10px] uppercase tracking-widest">
+                        Expirado
+                      </span>
+                    )}
                   </div>
 
                   {/* Corpo da Mensagem */}

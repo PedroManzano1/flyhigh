@@ -7,17 +7,40 @@ import api from '../utils/api';
 
 export const AuthContext = createContext({});
 
+// Monta o objeto do usuário a partir do token, sem quebrar a aplicação
+// caso o token esteja corrompido/expirado no localStorage.
+function lerToken(token) {
+    try {
+        const decoded = jwtDecode(token);
+        if (decoded.exp && decoded.exp * 1000 < Date.now()) return null;
+        return {
+            login: decoded.sub,
+            nome: decoded.nome || decoded.sub,
+            idUsuario: decoded.idUsuario ?? null,
+            permissoes: decoded.authorities || []
+        };
+    } catch {
+        return null;
+    }
+}
+
 export function AuthProvider({ children }) {
     const [user, setUser] = useState(null);
+    const [carregandoUsuario, setCarregandoUsuario] = useState(true);
     const router = useRouter();
 
     useEffect(() => {
         // Ao carregar a página, verifica se já tem alguém logado
         const token = localStorage.getItem('flyhigh_token');
         if (token) {
-            const decoded = jwtDecode(token);
-            setUser({ login: decoded.sub, permissoes: decoded.authorities });
+            const dados = lerToken(token);
+            if (dados) {
+                setUser(dados);
+            } else {
+                localStorage.removeItem('flyhigh_token');
+            }
         }
+        setCarregandoUsuario(false);
     }, []);
 
     async function signIn(login, senha) {
@@ -26,9 +49,8 @@ export function AuthProvider({ children }) {
             const { token } = response.data;
 
             localStorage.setItem('flyhigh_token', token);
-            const decoded = jwtDecode(token);
-            setUser({ login: decoded.sub, permissoes: decoded.authorities });
-            
+            setUser(lerToken(token));
+
             router.push('/'); // Manda para a página inicial após logar
         } catch (error) {
             throw new Error("Login ou senha incorretos.");
@@ -41,8 +63,15 @@ export function AuthProvider({ children }) {
         router.push('/login');
     }
 
+    // Regra de acesso usada por todas as telas: o DIRETOR enxerga tudo,
+    // os demais perfis dependem da permissão específica do módulo.
+    function temPermissao(permissaoNecessaria) {
+        if (!user || !user.permissoes) return false;
+        return user.permissoes.includes('ROLE_DIRETOR') || user.permissoes.includes(permissaoNecessaria);
+    }
+
     return (
-        <AuthContext.Provider value={{ user, signIn, signOut, isAuthenticated: !!user }}>
+        <AuthContext.Provider value={{ user, signIn, signOut, temPermissao, carregandoUsuario, isAuthenticated: !!user }}>
             {children}
         </AuthContext.Provider>
     );

@@ -36,6 +36,8 @@ public class JwtUtils {
         return Jwts.builder()
                 .setSubject(usuario.getLogin()) // O "dono" do token
                 .claim("authorities", authorities) // Guardando as permissões DENTRO do token
+                .claim("idUsuario", usuario.getIdUsuario()) // Permite ao frontend saber QUEM está logado
+                .claim("nome", usuario.getNome())
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)

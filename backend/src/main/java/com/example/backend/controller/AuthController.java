@@ -82,7 +82,8 @@ public class AuthController {
             novoPerfil.setNomePerfil("DIRETOR");
             novoPerfil.setDescricao("Acesso total e irrestrito ao sistema");
 
-            String[] modulos = {"USUARIOS", "ALUNOS", "RESPONSAVEIS", "CURSOS", "TURMAS", "VINCULOS", "PERFIS", "RECADOS"};
+            String[] modulos = {"USUARIOS", "ALUNOS", "RESPONSAVEIS", "CURSOS", "TURMAS", "VINCULOS",
+                    "PERFIS", "RECADOS", "CONTRATOS", "FREQUENCIAS", "AVALIACOES"};
             List<Permissao> permissoes = new ArrayList<>();
 
             for (String modulo : modulos) {

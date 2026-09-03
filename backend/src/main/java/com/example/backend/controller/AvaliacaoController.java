@@ -17,16 +17,19 @@ public class AvaliacaoController {
     @Autowired
     private AvaliacaoService service;
 
+    @PreAuthorize("hasRole('DIRETOR') or hasAuthority('AVALIACOES_WRITE')")
     @PostMapping
     public Avaliacao create(@RequestBody Avaliacao avaliacao) {
         return service.salvar(avaliacao);
     }
 
+    @PreAuthorize("hasRole('DIRETOR') or hasAuthority('AVALIACOES_READ')")
     @GetMapping
     public List<Avaliacao> getAll() {
         return service.listarTodos();
     }
 
+    @PreAuthorize("hasRole('DIRETOR') or hasAuthority('AVALIACOES_READ')")
     @GetMapping("/{id}")
     public ResponseEntity<Avaliacao> getById(@PathVariable Long id) {
         return service.buscarPorId(id)
@@ -34,11 +37,13 @@ public class AvaliacaoController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @PreAuthorize("hasRole('DIRETOR') or hasAuthority('AVALIACOES_READ')")
     @GetMapping("/turma/{idTurma}")
     public ResponseEntity<List<Avaliacao>> getByTurma(@PathVariable Long idTurma) {
         return ResponseEntity.ok(service.buscarPorTurma(idTurma));
     }
 
+    @PreAuthorize("hasRole('DIRETOR') or hasAuthority('AVALIACOES_WRITE')")
     @PutMapping("/editar/{id}")
     public ResponseEntity<Avaliacao> update(@PathVariable Long id, @RequestBody Avaliacao avaliacao) {
         return service.buscarPorId(id).map(existente -> {
@@ -47,6 +52,7 @@ public class AvaliacaoController {
         }).orElse(ResponseEntity.notFound().build());
     }
 
+    @PreAuthorize("hasRole('DIRETOR') or hasAuthority('AVALIACOES_DELETE')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         if (service.buscarPorId(id).isPresent()) {

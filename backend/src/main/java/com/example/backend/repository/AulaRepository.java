@@ -9,7 +9,7 @@ import java.util.List;
 
 public interface AulaRepository extends JpaRepository<Aula, Long> {
 
-    // Como a sua classe Turma usa id_turma, a JPQL precisa refletir isso
-    @Query("SELECT a FROM Aula a WHERE a.turma.id_turma = :idTurma")
+    // Ordenado da aula mais recente para a mais antiga
+    @Query("SELECT a FROM Aula a WHERE a.turma.id_turma = :idTurma ORDER BY a.dataAula DESC, a.id_aula DESC")
     List<Aula> findByTurmaId(@Param("idTurma") Long idTurma);
 }

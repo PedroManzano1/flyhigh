@@ -4,10 +4,10 @@ import api from '../../../utils/api';
 import { useRouter } from 'next/navigation'; 
 import { AuthContext } from '../../../context/authContext'; 
 
-const InputField = ({ label, name, placeholder, type = "text", onChange, value, className = "" }) => (
+const InputField = ({ label, name, placeholder, type = "text", onChange, value, className = "", step, min }) => (
   <div className={className}>
     <label className="block text-xs font-black text-zinc-700 uppercase tracking-widest mb-2">{label}</label>
-    <input type={type} name={name} value={value || ''} onChange={onChange} placeholder={placeholder} className="w-full p-4 border border-zinc-300 rounded-xl text-lg font-bold text-zinc-900 focus:ring-4 focus:ring-yellow-400/20 outline-none transition-all bg-white shadow-sm" />
+    <input type={type} name={name} value={value || ''} onChange={onChange} placeholder={placeholder} step={step} min={min} className="w-full p-4 border border-zinc-300 rounded-xl text-lg font-bold text-zinc-900 focus:ring-4 focus:ring-yellow-400/20 outline-none transition-all bg-white shadow-sm" />
   </div>
 );
 
@@ -55,8 +55,9 @@ export default function CursosPage() {
     e.preventDefault();
     const payload = {
       nome: formData.nome, tipo: formData.tipo, 
-      cargaHorariaTotal: parseInt(formData.cargaHorariaTotal),
-      valorBase: parseFloat(formData.valorBase), faixaEtaria: formData.faixaEtaria, 
+      cargaHorariaTotal: formData.cargaHorariaTotal ? parseInt(formData.cargaHorariaTotal) : null,
+      valorBase: formData.valorBase ? parseFloat(formData.valorBase) : null,
+      faixaEtaria: formData.faixaEtaria, 
       ativo: formData.ativo === 'true'
     };
 
@@ -114,7 +115,7 @@ export default function CursosPage() {
           <div className="bg-white p-8 rounded-3xl border border-zinc-200 shadow-sm space-y-6">
             <h2 className="font-black text-sm uppercase text-zinc-800 tracking-[0.2em] mb-4 border-b border-zinc-100 pb-2">02. Técnico & Comercial</h2>
             <div className="grid grid-cols-2 gap-4">
-              <InputField label="Carga Horária (Hrs)" name="cargaHorariaTotal" type="number" placeholder="Ex: 120" onChange={handleChange} value={formData.cargaHorariaTotal} />
+              <InputField label="Carga Horária (Hrs)" name="cargaHorariaTotal" type="number" min="0" placeholder="Ex: 120" onChange={handleChange} value={formData.cargaHorariaTotal} />
               <InputField label="Valor Base (R$)" name="valorBase" type="number" step="0.01" placeholder="Ex: 1500.00" onChange={handleChange} value={formData.valorBase} />
             </div>
             <SelectField label="Status do Curso" name="ativo" onChange={handleChange} value={formData.ativo}>

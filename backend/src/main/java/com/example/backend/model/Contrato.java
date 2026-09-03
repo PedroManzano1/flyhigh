@@ -18,16 +18,19 @@ public class Contrato {
     private String numeroContrato;
 
     // Relacionamento com Aluno
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "id_aluno", referencedColumnName = "id_aluno")
     private Aluno aluno;
 
     // Relacionamento com Turma
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "id_turma", referencedColumnName = "id_turma")
     private Turma turma;
 
-    // Outros campos do contrato podem ser adicionados depois quando for desenvolver o financeiro
+    @Column(name = "data_emissao")
+    private LocalDate dataEmissao;
+
+    // Outros campos do contrato vao ser adicionados depois quando o financeiro for desenvolvido
     @Column(name = "status")
     private String status;
 }

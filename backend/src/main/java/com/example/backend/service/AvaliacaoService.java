@@ -19,11 +19,15 @@ public class AvaliacaoService {
     @Autowired
     private TurmaRepository turmaRepo;
 
+    @Autowired
+    private AcessoPedagogicoService acessoPedagogico;
+
     public Avaliacao salvar(Avaliacao avaliacao) {
         // Validação crucial: Pega o ID, busca no banco e atrela à avaliação para não dar erro Transient
         if (avaliacao.getTurma() != null && avaliacao.getTurma().getId_turma() != null) {
             Turma turmaReal = turmaRepo.findById(avaliacao.getTurma().getId_turma())
                     .orElseThrow(() -> new RuntimeException("Turma não encontrada no banco de dados."));
+            acessoPedagogico.validarLancamentoNaTurma(turmaReal);
             avaliacao.setTurma(turmaReal);
         }
         return avaliacaoRepo.save(avaliacao);

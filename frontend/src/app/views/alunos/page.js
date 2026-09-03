@@ -18,6 +18,14 @@ const SelectField = ({ label, name, children, onChange, value, className = "" })
   </div>
 );
 
+const ANOS_ESCOLARES = [
+  "Educação Infantil",
+  "1º Ano Fundamental", "2º Ano Fundamental", "3º Ano Fundamental", "4º Ano Fundamental", "5º Ano Fundamental",
+  "6º Ano Fundamental", "7º Ano Fundamental", "8º Ano Fundamental", "9º Ano Fundamental",
+  "1º Ano Médio", "2º Ano Médio", "3º Ano Médio",
+  "Ensino Superior", "Concluído / Não estudante"
+];
+
 export default function AlunosPage() {
   const router = useRouter();
   const { user } = useContext(AuthContext);
@@ -77,8 +85,7 @@ export default function AlunosPage() {
             </div>
             <SelectField label="Ano Letivo" name="anoEscolar" onChange={handleChange} value={formData.anoEscolar}>
                <option value="">Selecione...</option>
-               <option value="1º Ano Fundamental">1º Ano Fundamental</option>
-               {/* Outras opções... */}
+               {ANOS_ESCOLARES.map(ano => <option key={ano} value={ano}>{ano}</option>)}
             </SelectField>
           </div>
 
@@ -128,6 +135,8 @@ export default function AlunosPage() {
               </tr>
             </thead>
             <tbody>
+              {loading && <tr><td colSpan="5" className="p-10 text-center uppercase italic font-black text-zinc-500 animate-pulse">Carregando Alunos...</td></tr>}
+
               {!loading && alunosFiltrados.map(aluno => (
                 <tr key={aluno.id_aluno} className="border-b border-zinc-100 hover:bg-yellow-50/50 transition-colors">
                   <td className="p-6 align-top">
@@ -170,12 +179,20 @@ export default function AlunosPage() {
 
                   <td className="p-6 align-middle">
                     <div className="flex justify-center gap-3">
-                      <button onClick={() => router.push(`/views/alunos/editar?id=${aluno.id_aluno}`)} className="w-14 h-14 flex items-center justify-center bg-zinc-900 text-white hover:bg-yellow-400 hover:text-zinc-900 rounded-2xl transition-all shadow-md text-2xl">✎</button>
-                      <button onClick={() => handleExcluir(aluno.id_aluno)} className="w-14 h-14 flex items-center justify-center bg-white text-zinc-900 border-2 border-zinc-200 hover:bg-red-600 hover:text-white rounded-2xl transition-all shadow-md text-2xl">🗑</button>
+                      {temPermissao('ALUNOS_WRITE') && (
+                        <button onClick={() => router.push(`/views/alunos/editar?id=${aluno.id_aluno}`)} className="w-14 h-14 flex items-center justify-center bg-zinc-900 text-white hover:bg-yellow-400 hover:text-zinc-900 rounded-2xl transition-all shadow-md text-2xl">✎</button>
+                      )}
+                      {temPermissao('ALUNOS_DELETE') && (
+                        <button onClick={() => handleExcluir(aluno.id_aluno)} className="w-14 h-14 flex items-center justify-center bg-white text-zinc-900 border-2 border-zinc-200 hover:bg-red-600 hover:text-white rounded-2xl transition-all shadow-md text-2xl">🗑</button>
+                      )}
                     </div>
                   </td>
                 </tr>
               ))}
+
+              {!loading && alunosFiltrados.length === 0 && (
+                 <tr><td colSpan="5" className="p-8 text-center text-zinc-500 uppercase font-black italic">Nenhum aluno encontrado.</td></tr>
+              )}
             </tbody>
           </table>
         </div>
