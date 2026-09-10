@@ -1,15 +1,11 @@
 "use client";
 import { Suspense, useState, useEffect, useContext, useMemo } from 'react';
+import { useFeedback } from '../../../../components/feedback';
+import { InputField } from '../../../../components/ui';
 import api, { mensagemErro } from '../../../../utils/api';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AuthContext } from '../../../../context/authContext';
 
-const InputField = ({ label, name, placeholder, type = "text", onChange, value, className = "", max, disabled = false }) => (
-  <div className={className}>
-    <label className="block text-sm font-black text-zinc-700 uppercase tracking-wider mb-2">{label}</label>
-    <input type={type} name={name} value={value || ''} onChange={onChange} placeholder={placeholder} max={max} disabled={disabled} className="w-full p-4 border border-zinc-300 rounded-xl text-lg font-bold text-zinc-900 focus:ring-4 focus:ring-yellow-400/30 focus:border-yellow-400 bg-white transition-all outline-none shadow-sm disabled:bg-zinc-100 disabled:text-zinc-400" />
-  </div>
-);
 
 const STATUS = [
   { valor: 'PRESENTE', rotulo: 'Presente', curto: 'P', ativo: 'bg-emerald-500 text-white border-emerald-500', inativo: 'bg-white text-emerald-700 border-emerald-200 hover:bg-emerald-50' },
@@ -17,7 +13,8 @@ const STATUS = [
   { valor: 'FALTA_JUSTIFICADA', rotulo: 'Justificada', curto: 'J', ativo: 'bg-amber-400 text-zinc-900 border-amber-400', inativo: 'bg-white text-amber-700 border-amber-200 hover:bg-amber-50' }
 ];
 
-// Data de hoje no fuso local
+// Data de hoje no fuso local (toISOString devolveria a data em UTC,
+// o que adiantaria um dia no fim da noite no Brasil).
 const hoje = () => {
   const d = new Date();
   const mes = String(d.getMonth() + 1).padStart(2, '0');
@@ -28,6 +25,7 @@ const formatarData = (data) => data ? new Date(data).toLocaleDateString('pt-BR',
 
 function ChamadaConteudo() {
   const router = useRouter();
+  const { notificar } = useFeedback();
   const searchParams = useSearchParams();
   const id = searchParams.get('id');
   const { temPermissao } = useContext(AuthContext);
@@ -82,7 +80,7 @@ function ChamadaConteudo() {
         });
         setChamada(inicial);
       } catch (err) {
-        alert(mensagemErro(err, "Erro ao carregar os dados da aula."));
+        notificar(mensagemErro(err, "Erro ao carregar os dados da aula."), 'erro');
         router.push('/views/faltas');
       } finally {
         setLoading(false);
@@ -122,8 +120,8 @@ function ChamadaConteudo() {
   }, [chamada]);
 
   const salvarAula = async () => {
-    if (!formAula.dataAula) { alert("Informe a data da aula."); return false; }
-    if (formAula.dataAula > hoje()) { alert("Não é possível registrar uma aula em data futura."); return false; }
+    if (!formAula.dataAula) { notificar("Informe a data da aula.", 'alerta'); return false; }
+    if (formAula.dataAula > hoje()) { notificar("Não é possível registrar uma aula em data futura.", 'alerta'); return false; }
 
     await api.put(`/api/aulas/editar/${id}`, {
       dataAula: formAula.dataAula,
@@ -137,7 +135,7 @@ function ChamadaConteudo() {
     e.preventDefault();
     if (!podeLancar) return;
     if (matriculas.length === 0) {
-      alert("Esta turma não possui alunos com matrícula ativa. Matricule os alunos antes de fazer a chamada.");
+      notificar("Esta turma não possui alunos com matrícula ativa. Matricule os alunos antes de fazer a chamada.", 'alerta');
       return;
     }
 
@@ -155,10 +153,10 @@ function ChamadaConteudo() {
         }));
 
       await api.post('/api/frequencias/chamada', payload);
-      alert("Chamada registrada com sucesso!");
+      notificar("Chamada registrada com sucesso!", 'sucesso');
       router.push('/views/faltas');
     } catch (err) {
-      alert(mensagemErro(err, "Erro ao registrar a chamada."));
+      notificar(mensagemErro(err, "Erro ao registrar a chamada."), 'erro');
     } finally {
       setSalvando(false);
     }

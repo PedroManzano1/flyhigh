@@ -1,26 +1,16 @@
 "use client";
 import { useState, useEffect, useContext } from 'react';
-import api from '../../../utils/api';
+import { useFeedback } from '../../../components/feedback';
+import { InputField, SelectField, LinhaCarregando, LinhaVazia, LinhaErro } from '../../../components/ui';
+import api, { mensagemErro } from '../../../utils/api';
 import { useRouter } from 'next/navigation'; 
 import { AuthContext } from '../../../context/authContext'; 
 
-const InputField = ({ label, name, placeholder, type = "text", onChange, value, className = "" }) => (
-  <div className={className}>
-    <label className="block text-sm font-black text-zinc-700 uppercase tracking-widest mb-2">{label}</label>
-    <input type={type} name={name} value={value || ''} onChange={onChange} placeholder={placeholder} className="w-full p-4 border border-zinc-300 rounded-xl text-lg font-bold text-zinc-900 focus:ring-4 focus:ring-yellow-400/20 outline-none transition-all bg-white shadow-sm" />
-  </div>
-);
-
-const SelectField = ({ label, name, children, onChange, value, className = "" }) => (
-  <div className={className}>
-    <label className="block text-sm font-black text-zinc-700 uppercase tracking-widest mb-2">{label}</label>
-    <select name={name} value={value || ''} onChange={onChange} className="w-full p-4 border border-zinc-300 rounded-xl text-lg font-bold text-zinc-900 focus:ring-4 focus:ring-yellow-400/20 outline-none appearance-none bg-white cursor-pointer shadow-sm">{children}</select>
-  </div>
-);
 
 export default function TurmasPage() {
   const router = useRouter();
-  const { user } = useContext(AuthContext);
+  const { notificar, confirmar } = useFeedback();
+  const { user, temPermissao } = useContext(AuthContext);
 
   const [turmas, setTurmas] = useState([]);
   const [cursos, setCursos] = useState([]);
@@ -32,10 +22,6 @@ export default function TurmasPage() {
   const estadoInicial = { codigoTurma: '', id_curso: '', diasSemana: '', horarioInicio: '', horarioFim: '', limiteVagas: '', semestreAno: '', status: 'Aberta', idProfessor: '' };
   const [formData, setFormData] = useState(estadoInicial);
 
-  const temPermissao = (permissaoNecessaria) => {
-    if (!user || !user.permissoes) return false;
-    return user.permissoes.includes('ROLE_DIRETOR') || user.permissoes.includes(permissaoNecessaria);
-  };
 
   const carregarDados = async () => {
     setLoading(true);
@@ -67,17 +53,17 @@ export default function TurmasPage() {
     };
     try {
       await api.post('/api/turmas', payload);
-      alert("Turma salva com sucesso!");
+      notificar("Turma salva com sucesso!", 'sucesso');
       carregarDados(); setFormData(estadoInicial);
-    } catch (err) { alert("Erro ao salvar turma."); }
+    } catch (err) { notificar(mensagemErro(err, "Erro ao salvar turma."), 'erro'); }
   };
 
   const handleExcluir = async (id) => {
-    if (window.confirm("Atenção! Deseja excluir esta turma?")) {
+    if (await confirmar("Atenção! Deseja excluir esta turma?")) {
       try {
         await api.delete(`/api/turmas/${id}`);
-        alert("Turma removida."); carregarDados(); 
-      } catch (err) { alert("Erro ao excluir."); }
+        notificar("Turma removida.", 'sucesso'); carregarDados();
+      } catch (err) { notificar(mensagemErro(err, "Erro ao excluir."), 'erro'); }
     }
   };
 
@@ -168,6 +154,9 @@ export default function TurmasPage() {
               </tr>
             </thead>
             <tbody>
+              {loading && <LinhaCarregando colunas={7} texto="Carregando Turmas..." />}
+              {!loading && error && <LinhaErro colunas={7} texto={error} />}
+
               {!loading && !error && turmasFiltradas.map(turma => (
                 <tr key={turma.id_turma} className="border-b border-zinc-100 hover:bg-yellow-50/50 transition-colors">
                   <td className="p-6 align-middle whitespace-nowrap">
@@ -214,6 +203,10 @@ export default function TurmasPage() {
                   </td>
                 </tr>
               ))}
+
+              {!loading && !error && turmasFiltradas.length === 0 && (
+                <LinhaVazia colunas={7} texto="Nenhuma turma encontrada." />
+              )}
             </tbody>
           </table>
         </div>

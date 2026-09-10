@@ -1,26 +1,16 @@
 "use client";
 import { useState, useEffect, useContext } from 'react';
-import api from '../../../utils/api';
+import { useFeedback } from '../../../components/feedback';
+import { InputField, SelectField } from '../../../components/ui';
+import api, { mensagemErro } from '../../../utils/api';
 import { useRouter } from 'next/navigation'; 
 import { AuthContext } from '../../../context/authContext'; 
 
-const InputField = ({ label, name, placeholder, type = "text", onChange, value, className = "", step, min }) => (
-  <div className={className}>
-    <label className="block text-xs font-black text-zinc-700 uppercase tracking-widest mb-2">{label}</label>
-    <input type={type} name={name} value={value || ''} onChange={onChange} placeholder={placeholder} step={step} min={min} className="w-full p-4 border border-zinc-300 rounded-xl text-lg font-bold text-zinc-900 focus:ring-4 focus:ring-yellow-400/20 outline-none transition-all bg-white shadow-sm" />
-  </div>
-);
-
-const SelectField = ({ label, name, children, onChange, value, className = "" }) => (
-  <div className={className}>
-    <label className="block text-xs font-black text-zinc-700 uppercase tracking-widest mb-2">{label}</label>
-    <select name={name} value={value || ''} onChange={onChange} className="w-full p-4 border border-zinc-300 rounded-xl text-lg font-bold text-zinc-900 focus:ring-4 focus:ring-yellow-400/20 outline-none appearance-none bg-white cursor-pointer shadow-sm">{children}</select>
-  </div>
-);
 
 export default function CursosPage() {
   const router = useRouter();
-  const { user } = useContext(AuthContext); 
+  const { notificar, confirmar } = useFeedback();
+  const { user, temPermissao } = useContext(AuthContext); 
 
   const [cursos, setCursos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -30,10 +20,6 @@ export default function CursosPage() {
   const estadoInicial = { nome: '', tipo: '', cargaHorariaTotal: '', valorBase: '', faixaEtaria: '', ativo: 'true' };
   const [formData, setFormData] = useState(estadoInicial);
 
-  const temPermissao = (permissaoNecessaria) => {
-    if (!user || !user.permissoes) return false;
-    return user.permissoes.includes('ROLE_DIRETOR') || user.permissoes.includes(permissaoNecessaria);
-  };
 
   const carregarCursos = async () => {
     setLoading(true);
@@ -63,17 +49,17 @@ export default function CursosPage() {
 
     try {
       await api.post('/api/cursos', payload);
-      alert("Curso salvo com sucesso!");
+      notificar("Curso salvo com sucesso!", 'sucesso');
       carregarCursos(); setFormData(estadoInicial);
-    } catch (err) { alert("Erro ao salvar curso. Verifique os dados."); console.error(err); }
+    } catch (err) { notificar(mensagemErro(err, "Erro ao salvar curso. Verifique os dados.")); console.error(err, 'erro'); }
   };
 
   const handleExcluir = async (id) => {
-    if (window.confirm("Atenção! Deseja excluir este curso permanentemente?")) {
+    if (await confirmar("Atenção! Deseja excluir este curso permanentemente?")) {
       try {
         await api.delete(`/api/cursos/${id}`);
-        alert("Curso removido."); carregarCursos(); 
-      } catch (err) { alert("Erro ao excluir. Verifique a conexão."); }
+        notificar("Curso removido.", 'sucesso'); carregarCursos();
+      } catch (err) { notificar(mensagemErro(err, "Erro ao excluir. Verifique a conexão."), 'erro'); }
     }
   };
 

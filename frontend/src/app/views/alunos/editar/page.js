@@ -1,46 +1,21 @@
 "use client";
 import { Suspense, useState, useEffect } from 'react';
-import api from '../../../../utils/api';
+import { useFeedback } from '../../../../components/feedback';
+import { InputField, SelectField } from '../../../../components/ui';
+import api, { mensagemErro } from '../../../../utils/api';
 import { useRouter, useSearchParams } from 'next/navigation'; 
 
-const InputField = ({ label, name, placeholder, type = "text", onChange, value, className = "" }) => (
-  <div className={className}>
-    {/* Label agora em cinza escuro para máxima clareza */}
-    <label className="block text-sm font-black text-zinc-700 uppercase tracking-wider mb-2">{label}</label>
-    <input
-      type={type} 
-      name={name} 
-      value={value || ''} 
-      onChange={onChange} 
-      placeholder={placeholder}
-      className="w-full p-4 border border-zinc-300 rounded-xl text-lg font-bold text-zinc-900 focus:ring-4 focus:ring-yellow-400/30 focus:border-yellow-400 bg-white transition-all outline-none"
-    />
-  </div>
-);
-
-const SelectField = ({ label, name, children, onChange, value }) => (
-  <div>
-    <label className="block text-sm font-black text-zinc-700 uppercase tracking-wider mb-2">{label}</label>
-    <select
-      name={name} 
-      value={value || ''} 
-      onChange={onChange}
-      className="w-full p-4 border border-zinc-300 rounded-xl text-lg font-bold text-zinc-900 focus:ring-4 focus:ring-yellow-400/30 bg-white transition-all outline-none appearance-none cursor-pointer"
-    >
-      {children}
-    </select>
-  </div>
-);
 
 function EditarAlunoPageConteudo() {
   const router = useRouter();
+  const { notificar } = useFeedback();
   const searchParams = useSearchParams();
   const id = searchParams.get('id');
 
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
     nome: '', numeroMatricula: '', dataNascimento: '', rg: '', cpf: '',
-    cep: '', logradouro: '', numero: '', bairro: '', cidade: '',
+    cep: '', logradouro: '', numero: '', complemento: '', bairro: '', cidade: '',
     telefonePrincipal: '', telefoneSecundario: '', anoEscolar: ''
   });
 
@@ -62,11 +37,12 @@ function EditarAlunoPageConteudo() {
           cep: aluno.endereco?.cep || '',
           logradouro: aluno.endereco?.logradouro || '',
           numero: aluno.endereco?.numero || '',
+          complemento: aluno.endereco?.complemento || '',
           bairro: aluno.endereco?.bairro || '',
           cidade: aluno.endereco?.cidade || ''
         });
       } catch (err) {
-        alert("Erro ao carregar dados do aluno.");
+        notificar(mensagemErro(err, "Erro ao carregar dados do aluno."), 'erro');
         router.push('/views/alunos'); 
       } finally { setLoading(false); }
     };
@@ -81,14 +57,14 @@ function EditarAlunoPageConteudo() {
       nome: formData.nome, numeroMatricula: formData.numeroMatricula, dataNascimento: formData.dataNascimento,
       rg: formData.rg, cpf: formData.cpf, anoEscolar: formData.anoEscolar,
       telefonePrincipal: formData.telefonePrincipal, telefoneSecundario: formData.telefoneSecundario,
-      endereco: { cep: formData.cep, logradouro: formData.logradouro, numero: formData.numero, bairro: formData.bairro, cidade: formData.cidade }
+      endereco: { cep: formData.cep, logradouro: formData.logradouro, numero: formData.numero, complemento: formData.complemento, bairro: formData.bairro, cidade: formData.cidade }
     };
 
     try {
       await api.put(`/api/alunos/editar/${id}`, payload);
-      alert("Dados atualizados com sucesso!");
+      notificar("Dados atualizados com sucesso!", 'sucesso');
       router.push('/views/alunos'); 
-    } catch (err) { alert("Erro ao atualizar aluno."); }
+    } catch (err) { notificar(mensagemErro(err, "Erro ao atualizar aluno."), 'erro'); }
   };
 
   if (loading) {
@@ -142,6 +118,7 @@ function EditarAlunoPageConteudo() {
             <InputField label="Nº" name="numero" onChange={handleChange} value={formData.numero} />
             <InputField label="Bairro" name="bairro" onChange={handleChange} value={formData.bairro} className="col-span-2" />
           </div>
+          <InputField label="Complemento" name="complemento" placeholder="Ex: Apto 32" onChange={handleChange} value={formData.complemento} />
           <InputField label="Cidade" name="cidade" onChange={handleChange} value={formData.cidade} />
         </div>
 

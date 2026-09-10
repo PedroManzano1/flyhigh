@@ -1,41 +1,14 @@
 "use client";
 import { Suspense, useState, useEffect } from 'react';
+import { useFeedback } from '../../../../components/feedback';
+import { InputField, SelectField } from '../../../../components/ui';
 import { useRouter, useSearchParams } from 'next/navigation';
-import api from '../../../../utils/api';
+import api, { mensagemErro } from '../../../../utils/api';
 
-// --- COMPONENTES UTILITÁRIOS PADRONIZADOS ---
-const InputField = ({ label, name, placeholder, type = "text", onChange, value, className = "", required = false }) => (
-  <div className={className}>
-    <label className="block text-sm font-black text-zinc-700 uppercase tracking-wider mb-2">{label}</label>
-    <input
-      type={type} 
-      name={name} 
-      value={value || ''} 
-      onChange={onChange} 
-      placeholder={placeholder}
-      required={required}
-      className="w-full p-4 border border-zinc-300 rounded-xl text-lg font-bold text-zinc-900 focus:ring-4 focus:ring-yellow-400/30 focus:border-yellow-400 bg-white transition-all outline-none shadow-sm"
-    />
-  </div>
-);
-
-const SelectField = ({ label, name, children, onChange, value, required = false }) => (
-  <div>
-    <label className="block text-sm font-black text-zinc-700 uppercase tracking-wider mb-2">{label}</label>
-    <select
-      name={name} 
-      value={value || ''} 
-      onChange={onChange}
-      required={required}
-      className="w-full p-4 border border-zinc-300 rounded-xl text-lg font-bold text-zinc-900 focus:ring-4 focus:ring-yellow-400/30 bg-white transition-all outline-none appearance-none cursor-pointer shadow-sm"
-    >
-      {children}
-    </select>
-  </div>
-);
 
 function EditarUsuarioPageConteudo() {
   const router = useRouter();
+  const { notificar } = useFeedback();
   const searchParams = useSearchParams();
   const id = searchParams.get('id');
 
@@ -43,7 +16,7 @@ function EditarUsuarioPageConteudo() {
   const [loading, setLoading] = useState(true);
   
   const [formData, setFormData] = useState({
-    nome: '', login: '', senha: '', idPerfil: ''
+    nome: '', login: '', senha: '', idPerfil: '', status: 'ATIVO'
   });
 
   useEffect(() => {
@@ -61,11 +34,12 @@ function EditarUsuarioPageConteudo() {
           nome: user.nome || '',
           login: user.login || '',
           senha: '', 
-          idPerfil: user.perfil?.idPerfil || ''
+          idPerfil: user.perfil?.idPerfil || '',
+          status: user.status || 'ATIVO'
         });
         setPerfis(Array.isArray(resPerfis.data) ? resPerfis.data : []);
       } catch (err) {
-        alert("Erro ao buscar dados.");
+        notificar(mensagemErro(err, "Erro ao buscar dados."), 'erro');
         router.push('/views/usuarios');
       } finally {
         setLoading(false);
@@ -79,6 +53,7 @@ function EditarUsuarioPageConteudo() {
     const payload = {
       nome: formData.nome,
       login: formData.login,
+      status: formData.status,
       perfil: { idPerfil: parseInt(formData.idPerfil) }
     };
 
@@ -88,9 +63,9 @@ function EditarUsuarioPageConteudo() {
 
     try {
       await api.put(`/api/usuarios/editar/${id}`, payload);
-      alert("Usuário atualizado!");
+      notificar("Usuário atualizado!", 'sucesso');
       router.push('/views/usuarios');
-    } catch (err) { alert("Erro ao atualizar."); }
+    } catch (err) { notificar(mensagemErro(err, "Erro ao atualizar."), 'erro'); }
   };
 
   if (loading) return (
@@ -123,10 +98,22 @@ function EditarUsuarioPageConteudo() {
               <InputField label="Nova Senha (Opcional)" name="senha" type="password" placeholder="••••••••" value={formData.senha} onChange={e => setFormData({...formData, senha: e.target.value})} />
             </div>
 
-            <SelectField label="Cargo / Perfil" name="idPerfil" value={formData.idPerfil} onChange={e => setFormData({...formData, idPerfil: e.target.value})} required>
-              <option value="">Selecione o Perfil...</option>
-              {perfis.map(p => <option key={p.idPerfil} value={p.idPerfil}>{p.nomePerfil}</option>)}
-            </SelectField>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <SelectField label="Cargo / Perfil" name="idPerfil" value={formData.idPerfil} onChange={e => setFormData({...formData, idPerfil: e.target.value})} required>
+                <option value="">Selecione o Perfil...</option>
+                {perfis.map(p => <option key={p.idPerfil} value={p.idPerfil}>{p.nomePerfil}</option>)}
+              </SelectField>
+
+              <SelectField label="Situação do Acesso" name="status" value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})} required>
+                <option value="ATIVO">🟢 Ativo (pode entrar no sistema)</option>
+                <option value="INATIVO">🔴 Inativo (login bloqueado)</option>
+              </SelectField>
+            </div>
+
+            <p className="text-xs font-bold text-zinc-500 leading-relaxed">
+              Inative o acesso ao desligar um funcionário. Excluir o cadastro não é possível quando ele
+              já é professor de alguma turma ou publicou recados, para não quebrar o histórico.
+            </p>
           </div>
 
           <div className="pt-6 border-t border-zinc-100 flex flex-col gap-4">

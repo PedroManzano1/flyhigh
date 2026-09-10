@@ -1,26 +1,16 @@
 "use client";
 import { useState, useEffect, useContext } from 'react';
-import api from '../../../utils/api';
+import { useFeedback } from '../../../components/feedback';
+import { InputField, SelectField, LinhaCarregando, LinhaVazia } from '../../../components/ui';
+import api, { mensagemErro } from '../../../utils/api';
 import { useRouter } from 'next/navigation'; 
 import { AuthContext } from '../../../context/authContext'; 
 
-const InputField = ({ label, name, placeholder, type = "text", onChange, value, className = "" }) => (
-  <div className={className}>
-    <label className="block text-xs font-black text-zinc-700 uppercase tracking-widest mb-2">{label}</label>
-    <input type={type} name={name} value={value || ''} onChange={onChange} placeholder={placeholder} className="w-full p-4 border border-zinc-300 rounded-xl text-lg font-bold text-zinc-900 focus:ring-4 focus:ring-yellow-400/20 outline-none transition-all bg-white shadow-sm" />
-  </div>
-);
-
-const SelectField = ({ label, name, children, onChange, value, className = "" }) => (
-  <div className={className}>
-    <label className="block text-xs font-black text-zinc-700 uppercase tracking-widest mb-2">{label}</label>
-    <select name={name} value={value || ''} onChange={onChange} className="w-full p-4 border border-zinc-300 rounded-xl text-lg font-bold text-zinc-900 focus:ring-4 focus:ring-yellow-400/20 outline-none appearance-none bg-white cursor-pointer shadow-sm">{children}</select>
-  </div>
-);
 
 export default function ResponsaveisPage() {
   const router = useRouter();
-  const { user } = useContext(AuthContext);
+  const { notificar, confirmar } = useFeedback();
+  const { user, temPermissao } = useContext(AuthContext);
 
   const [responsaveis, setResponsaveis] = useState([]);
   const [alunos, setAlunos] = useState([]);
@@ -33,16 +23,12 @@ export default function ResponsaveisPage() {
 
   const [error, setError] = useState(null);
 
-  const estadoInicialResp = { nome: '', dataNascimento: '', rg: '', cpf: '', cep: '', logradouro: '', numero: '', bairro: '', cidade: '', telefonePrincipal: '', telefoneSecundario: '' };
+  const estadoInicialResp = { nome: '', dataNascimento: '', rg: '', cpf: '', cep: '', logradouro: '', numero: '', complemento: '', bairro: '', cidade: '', telefonePrincipal: '', telefoneSecundario: '' };
   const estadoInicialVinculo = { id_aluno: '', id_responsavel: '', grauParentesco: '', isResponsavelFinanceiro: 'false' };
 
   const [formData, setFormData] = useState(estadoInicialResp);
   const [vinculoData, setVinculoData] = useState(estadoInicialVinculo);
 
-  const temPermissao = (permissaoNecessaria) => {
-    if (!user || !user.permissoes) return false;
-    return user.permissoes.includes('ROLE_DIRETOR') || user.permissoes.includes(permissaoNecessaria);
-  };
 
   const carregarDados = async () => {
     setLoading(true);
@@ -80,43 +66,43 @@ export default function ResponsaveisPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const payload = { nome: formData.nome, dataNascimento: formData.dataNascimento, rg: formData.rg, cpf: formData.cpf, telefonePrincipal: formData.telefonePrincipal, telefoneSecundario: formData.telefoneSecundario, endereco: { cep: formData.cep, logradouro: formData.logradouro, numero: formData.numero, bairro: formData.bairro, cidade: formData.cidade } };
+    const payload = { nome: formData.nome, dataNascimento: formData.dataNascimento, rg: formData.rg, cpf: formData.cpf, telefonePrincipal: formData.telefonePrincipal, telefoneSecundario: formData.telefoneSecundario, endereco: { cep: formData.cep, logradouro: formData.logradouro, numero: formData.numero, complemento: formData.complemento, bairro: formData.bairro, cidade: formData.cidade } };
     try {
       await api.post('/api/responsaveis', payload);
-      alert("Responsável salvo com sucesso!");
+      notificar("Responsável salvo com sucesso!", 'sucesso');
       carregarDados(); setFormData(estadoInicialResp);
-    } catch (err) { alert("Erro ao salvar responsável."); }
+    } catch (err) { notificar(mensagemErro(err, "Erro ao salvar responsável."), 'erro'); }
   };
 
   const handleVinculoSubmit = async (e) => {
     e.preventDefault();
-    if (!vinculoData.id_aluno || !vinculoData.id_responsavel || !vinculoData.grauParentesco) return alert("Preencha Aluno, Responsável e Grau.");
+    if (!vinculoData.id_aluno || !vinculoData.id_responsavel || !vinculoData.grauParentesco) return notificar("Preencha Aluno, Responsável e Grau.", 'alerta');
     const payload = { aluno: { id_aluno: parseInt(vinculoData.id_aluno) }, responsavel: { id_responsavel: parseInt(vinculoData.id_responsavel) }, grauParentesco: vinculoData.grauParentesco, isResponsavelFinanceiro: vinculoData.isResponsavelFinanceiro === 'true' };
     try {
       await api.post('/api/vinculos', payload);
-      alert("Vínculo criado!"); carregarDados(); setVinculoData(estadoInicialVinculo);
-    } catch (err) { alert("Erro ao criar o vínculo."); }
+      notificar("Vínculo criado!"); carregarDados(); setVinculoData(estadoInicialVinculo, 'alerta');
+    } catch (err) { notificar(mensagemErro(err, "Erro ao criar o vínculo."), 'erro'); }
   };
 
   const handleExcluir = async (id) => {
-    if (window.confirm("Deseja excluir este responsável?")) {
+    if (await confirmar("Deseja excluir este responsável?")) {
       try {
         await api.delete(`/api/responsaveis/${id}`);
         carregarDados(); 
-      } catch (err) { alert("Erro ao excluir."); }
+      } catch (err) { notificar(mensagemErro(err, "Erro ao excluir."), 'erro'); }
     }
   };
 
   const handleDesfazerVinculo = async (idAluno, idResponsavel) => {
-    if (!idAluno || !idResponsavel) return alert("IDs do vínculo não encontrados.");
+    if (!idAluno || !idResponsavel) return notificar("IDs do vínculo não encontrados.", 'alerta');
     
-    if (window.confirm("Deseja realmente desfazer este vínculo entre o aluno e o responsável?")) {
+    if (await confirmar("Deseja realmente desfazer este vínculo entre o aluno e o responsável?")) {
       try {
         await api.delete(`/api/vinculos/${idAluno}/${idResponsavel}`);
-        alert("Vínculo desfeito com sucesso!");
+        notificar("Vínculo desfeito com sucesso!", 'sucesso');
         carregarDados();
       } catch (err) { 
-        alert("Erro ao desfazer o vínculo."); 
+        notificar(mensagemErro(err, "Erro ao desfazer o vínculo."), 'erro'); 
         console.error(err);
       }
     }
@@ -172,7 +158,10 @@ export default function ResponsaveisPage() {
               <InputField label="Bairro" name="bairro" onChange={handleChange} value={formData.bairro} />
             </div>
             <InputField label="Logradouro" name="logradouro" onChange={handleChange} value={formData.logradouro} />
-            <InputField label="Cidade" name="cidade" onChange={handleChange} value={formData.cidade} />
+            <div className="grid grid-cols-2 gap-4">
+              <InputField label="Complemento" name="complemento" placeholder="Ex: Apto 32" onChange={handleChange} value={formData.complemento} />
+              <InputField label="Cidade" name="cidade" onChange={handleChange} value={formData.cidade} />
+            </div>
           </div>
 
           <div className="bg-yellow-400 p-10 rounded-3xl flex flex-col justify-between shadow-xl">
@@ -254,6 +243,8 @@ export default function ResponsaveisPage() {
               </tr>
             </thead>
             <tbody>
+              {loading && <LinhaCarregando colunas={8} texto="Carregando Responsáveis..." />}
+
               {!loading && responsaveisFiltrados.map(resp => (
                 <tr key={resp.id_responsavel} className="border-b border-zinc-100 hover:bg-yellow-50/50 transition-colors">
                   
@@ -318,7 +309,7 @@ export default function ResponsaveisPage() {
                     {resp.endereco ? (
                       <div className="flex flex-col gap-1">
                         <span className="uppercase text-zinc-900">
-                          {resp.endereco.logradouro}, {resp.endereco.numero || 'S/N'}
+                          {resp.endereco.logradouro}, {resp.endereco.numero || 'S/N'}{resp.endereco.complemento ? ` — ${resp.endereco.complemento}` : ''}
                         </span>
                         <span className="text-zinc-600">
                           {resp.endereco.bairro} - {resp.endereco.cidade}
@@ -359,6 +350,10 @@ export default function ResponsaveisPage() {
                   </td>
                 </tr>
               ))}
+
+              {!loading && responsaveisFiltrados.length === 0 && (
+                <LinhaVazia colunas={8} texto="Nenhum responsável encontrado." />
+              )}
             </tbody>
           </table>
         </div>

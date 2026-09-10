@@ -77,7 +77,8 @@ public class AuthController {
                     .body("Acesso negado: O sistema já possui usuários cadastrados.");
         }
 
-        Perfil perfilDiretor = perfilRepository.findByNomePerfil("DIRETOR").orElseGet(() -> {
+        Perfil perfilDiretor = perfilRepository.findByNomePerfilIgnoreCase("DIRETOR").stream()
+                .findFirst().orElseGet(() -> {
             Perfil novoPerfil = new Perfil();
             novoPerfil.setNomePerfil("DIRETOR");
             novoPerfil.setDescricao("Acesso total e irrestrito ao sistema");

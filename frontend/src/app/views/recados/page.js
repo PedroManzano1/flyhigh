@@ -1,26 +1,16 @@
 "use client";
 import { useState, useEffect, useContext } from 'react';
-import api from '../../../utils/api';
+import { useFeedback } from '../../../components/feedback';
+import { InputField, TextareaField } from '../../../components/ui';
+import api, { mensagemErro } from '../../../utils/api';
 import { useRouter } from 'next/navigation'; 
 import { AuthContext } from '../../../context/authContext'; 
 
-const InputField = ({ label, name, placeholder, type = "text", onChange, value, className = "" }) => (
-  <div className={className}>
-    <label className="block text-sm font-black text-zinc-700 uppercase tracking-widest mb-2">{label}</label>
-    <input type={type} name={name} value={value || ''} onChange={onChange} placeholder={placeholder} className="w-full p-4 border border-zinc-300 rounded-xl text-lg font-bold text-zinc-900 focus:ring-4 focus:ring-yellow-400/20 outline-none transition-all bg-white shadow-sm" />
-  </div>
-);
-
-const TextareaField = ({ label, name, placeholder, onChange, value, className = "" }) => (
-  <div className={className}>
-    <label className="block text-sm font-black text-zinc-700 uppercase tracking-widest mb-2">{label}</label>
-    <textarea name={name} value={value || ''} onChange={onChange} placeholder={placeholder} className="w-full p-4 h-32 resize-none border border-zinc-300 rounded-xl text-lg font-bold text-zinc-900 focus:ring-4 focus:ring-yellow-400/20 outline-none transition-all bg-white shadow-sm" />
-  </div>
-);
 
 export default function RecadosPage() {
   const router = useRouter();
-  const { user } = useContext(AuthContext);
+  const { notificar, confirmar } = useFeedback();
+  const { user, temPermissao } = useContext(AuthContext);
 
   const [recados, setRecados] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -29,10 +19,6 @@ export default function RecadosPage() {
   const estadoInicial = { titulo: '', mensagem: '', dataExpiracao: '', arquivoAnexo: '' };
   const [formData, setFormData] = useState(estadoInicial);
 
-  const temPermissao = (permissaoNecessaria) => {
-    if (!user || !user.permissoes) return false;
-    return user.permissoes.includes('ROLE_DIRETOR') || user.permissoes.includes(permissaoNecessaria);
-  };
 
   const carregarRecados = async () => {
     setLoading(true);
@@ -58,19 +44,19 @@ export default function RecadosPage() {
 
     try {
       await api.post('/api/recados', payload);
-      alert("Recado publicado no mural!"); 
+      notificar("Recado publicado no mural!", 'sucesso'); 
       carregarRecados(); 
       setFormData(estadoInicial);
-    } catch (err) { alert("Erro ao publicar o recado. Verifique os dados."); }
+    } catch (err) { notificar(mensagemErro(err, "Erro ao publicar o recado. Verifique os dados."), 'erro'); }
   };
 
   const handleExcluir = async (id) => {
-    if (window.confirm("Deseja apagar este comunicado do mural?")) {
-      try { await api.delete(`/api/recados/${id}`); carregarRecados(); } catch (err) { alert("Erro ao excluir."); }
+    if (await confirmar("Deseja apagar este comunicado do mural?")) {
+      try { await api.delete(`/api/recados/${id}`); carregarRecados(); } catch (err) { notificar(mensagemErro(err, "Erro ao excluir."), 'erro'); }
     }
   };
 
-  // recado expirado não aparece para quem tem apenas leitura;
+  // Estória 4: recado expirado não aparece para quem tem apenas leitura;
   // e o mural é sempre ordenado do mais recente para o mais antigo.
   const agora = new Date();
   const hojeISO = `${agora.getFullYear()}-${String(agora.getMonth() + 1).padStart(2, '0')}-${String(agora.getDate()).padStart(2, '0')}`;

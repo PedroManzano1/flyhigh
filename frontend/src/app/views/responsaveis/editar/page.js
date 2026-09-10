@@ -1,31 +1,21 @@
 "use client";
 import { Suspense, useState, useEffect } from 'react';
-import api from '../../../../utils/api';
+import { useFeedback } from '../../../../components/feedback';
+import { InputField } from '../../../../components/ui';
+import api, { mensagemErro } from '../../../../utils/api';
 import { useRouter, useSearchParams } from 'next/navigation'; 
 
-const InputField = ({ label, name, placeholder, type = "text", onChange, value, className = "" }) => (
-  <div className={className}>
-    <label className="block text-sm font-black text-zinc-700 uppercase tracking-wider mb-2">{label}</label>
-    <input
-      type={type} 
-      name={name} 
-      value={value || ''} 
-      onChange={onChange} 
-      placeholder={placeholder}
-      className="w-full p-4 border border-zinc-300 rounded-xl text-lg font-bold text-zinc-900 focus:ring-4 focus:ring-yellow-400/30 focus:border-yellow-400 bg-white transition-all outline-none"
-    />
-  </div>
-);
 
 function EditarResponsavelPageConteudo() {
   const router = useRouter();
+  const { notificar } = useFeedback();
   const searchParams = useSearchParams();
   const id = searchParams.get('id'); 
 
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
     nome: '', dataNascimento: '', rg: '', cpf: '',
-    cep: '', logradouro: '', numero: '', bairro: '', cidade: '',
+    cep: '', logradouro: '', numero: '', complemento: '', bairro: '', cidade: '',
     telefonePrincipal: '', telefoneSecundario: ''
   });
 
@@ -46,11 +36,12 @@ function EditarResponsavelPageConteudo() {
           cep: resp.endereco?.cep || '',
           logradouro: resp.endereco?.logradouro || '',
           numero: resp.endereco?.numero || '',
+          complemento: resp.endereco?.complemento || '',
           bairro: resp.endereco?.bairro || '',
           cidade: resp.endereco?.cidade || ''
         });
       } catch (err) {
-        alert("Erro ao carregar dados do responsável.");
+        notificar(mensagemErro(err, "Erro ao carregar dados do responsável."), 'erro');
         router.push('/views/responsaveis'); 
       } finally { setLoading(false); }
     };
@@ -64,14 +55,14 @@ function EditarResponsavelPageConteudo() {
     const payload = {
       nome: formData.nome, dataNascimento: formData.dataNascimento, rg: formData.rg, cpf: formData.cpf,
       telefonePrincipal: formData.telefonePrincipal, telefoneSecundario: formData.telefoneSecundario,
-      endereco: { cep: formData.cep, logradouro: formData.logradouro, numero: formData.numero, bairro: formData.bairro, cidade: formData.cidade }
+      endereco: { cep: formData.cep, logradouro: formData.logradouro, numero: formData.numero, complemento: formData.complemento, bairro: formData.bairro, cidade: formData.cidade }
     };
 
     try {
       await api.put(`/api/responsaveis/editar/${id}`, payload);
-      alert("Responsável atualizado com sucesso!");
+      notificar("Responsável atualizado com sucesso!", 'sucesso');
       router.push('/views/responsaveis'); 
-    } catch (err) { alert("Erro ao atualizar dados."); }
+    } catch (err) { notificar(mensagemErro(err, "Erro ao atualizar dados."), 'erro'); }
   };
 
   if (loading) {
@@ -117,6 +108,7 @@ function EditarResponsavelPageConteudo() {
             <InputField label="Bairro" name="bairro" onChange={handleChange} value={formData.bairro} />
           </div>
           <InputField label="Logradouro" name="logradouro" onChange={handleChange} value={formData.logradouro} />
+          <InputField label="Complemento" name="complemento" placeholder="Ex: Apto 32" onChange={handleChange} value={formData.complemento} />
           <InputField label="Cidade" name="cidade" onChange={handleChange} value={formData.cidade} />
         </div>
 

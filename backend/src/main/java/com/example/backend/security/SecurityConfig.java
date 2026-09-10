@@ -58,7 +58,7 @@ public class SecurityConfig {
         configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000"));
 
         // Libera os métodos que o React vai usar
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
 
         // Libera o envio de cabeçalhos (como o de Authorization com o Token JWT)
         configuration.setAllowedHeaders(Arrays.asList("*"));

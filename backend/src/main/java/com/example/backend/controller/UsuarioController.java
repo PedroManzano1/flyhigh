@@ -8,6 +8,7 @@ import org.springframework.security.access.prepost.PreAuthorize; // Import neces
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/usuarios")
@@ -45,6 +46,13 @@ public class UsuarioController {
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
         }
+    }
+
+    // Ativar/inativar o acesso sem excluir o cadastro
+    @PatchMapping("/{id}/status")
+    @PreAuthorize("hasRole('DIRETOR') or hasAuthority('USUARIOS_WRITE')")
+    public ResponseEntity<Usuario> alterarStatus(@PathVariable Integer id, @RequestBody Map<String, String> corpo) {
+        return ResponseEntity.ok(service.alterarStatus(id, corpo.get("status")));
     }
 
     @DeleteMapping("/{id}")

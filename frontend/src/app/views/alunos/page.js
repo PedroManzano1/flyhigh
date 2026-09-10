@@ -1,22 +1,11 @@
 "use client";
 import { useState, useEffect, useContext } from 'react';
-import api from '../../../utils/api';
+import { useFeedback } from '../../../components/feedback';
+import { InputField, SelectField } from '../../../components/ui';
+import api, { mensagemErro } from '../../../utils/api';
 import { useRouter } from 'next/navigation'; 
 import { AuthContext } from '../../../context/authContext'; 
 
-const InputField = ({ label, name, placeholder, type = "text", onChange, value, className = "" }) => (
-  <div className={className}>
-    <label className="block text-xs font-black text-zinc-700 uppercase tracking-widest mb-2">{label}</label>
-    <input type={type} name={name} value={value || ''} onChange={onChange} placeholder={placeholder} className="w-full p-4 border border-zinc-300 rounded-xl text-lg font-bold text-zinc-900 focus:ring-4 focus:ring-yellow-400/20 outline-none transition-all bg-white shadow-sm" />
-  </div>
-);
-
-const SelectField = ({ label, name, children, onChange, value, className = "" }) => (
-  <div className={className}>
-    <label className="block text-xs font-black text-zinc-700 uppercase tracking-widest mb-2">{label}</label>
-    <select name={name} value={value || ''} onChange={onChange} className="w-full p-4 border border-zinc-300 rounded-xl text-lg font-bold text-zinc-900 focus:ring-4 focus:ring-yellow-400/20 outline-none appearance-none bg-white cursor-pointer shadow-sm">{children}</select>
-  </div>
-);
 
 const ANOS_ESCOLARES = [
   "Educação Infantil",
@@ -28,14 +17,14 @@ const ANOS_ESCOLARES = [
 
 export default function AlunosPage() {
   const router = useRouter();
-  const { user } = useContext(AuthContext);
+  const { notificar, confirmar } = useFeedback();
+  const { user, temPermissao } = useContext(AuthContext);
   const [alunos, setAlunos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const estadoInicial = { nome: '', numeroMatricula: '', dataNascimento: '', rg: '', cpf: '', cep: '', logradouro: '', numero: '', bairro: '', cidade: '', telefonePrincipal: '', telefoneSecundario: '', anoEscolar: '' };
+  const estadoInicial = { nome: '', numeroMatricula: '', dataNascimento: '', rg: '', cpf: '', cep: '', logradouro: '', numero: '', complemento: '', bairro: '', cidade: '', telefonePrincipal: '', telefoneSecundario: '', anoEscolar: '' };
   const [formData, setFormData] = useState(estadoInicial);
 
-  const temPermissao = (per) => user?.permissoes?.includes('ROLE_DIRETOR') || user?.permissoes?.includes(per);
   const carregarAlunos = async () => {
     setLoading(true);
     try { const res = await api.get('/api/alunos'); setAlunos(res.data); } catch (err) { console.error(err); } finally { setLoading(false); }
@@ -46,13 +35,13 @@ export default function AlunosPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const payload = { ...formData, endereco: { cep: formData.cep, logradouro: formData.logradouro, numero: formData.numero, bairro: formData.bairro, cidade: formData.cidade } };
-    try { await api.post('/api/alunos', payload); alert("Aluno cadastrado!"); carregarAlunos(); setFormData(estadoInicial); } catch (err) { alert("Erro ao salvar."); }
+    const payload = { ...formData, endereco: { cep: formData.cep, logradouro: formData.logradouro, numero: formData.numero, complemento: formData.complemento, bairro: formData.bairro, cidade: formData.cidade } };
+    try { await api.post('/api/alunos', payload); notificar("Aluno cadastrado!"); carregarAlunos(); setFormData(estadoInicial); } catch (err) { notificar(mensagemErro(err, "Erro ao salvar."), 'erro'); }
   };
 
   const handleExcluir = async (id) => {
-    if (window.confirm("Deseja realmente excluir este registro?")) {
-      try { await api.delete(`/api/alunos/${id}`); carregarAlunos(); } catch (err) { alert("Erro ao excluir."); }
+    if (await confirmar("Deseja realmente excluir este registro?")) {
+      try { await api.delete(`/api/alunos/${id}`); carregarAlunos(); } catch (err) { notificar(mensagemErro(err, "Erro ao excluir."), 'erro'); }
     }
   };
 
@@ -101,7 +90,10 @@ export default function AlunosPage() {
               <InputField label="Bairro" name="bairro" onChange={handleChange} value={formData.bairro} />
             </div>
             <InputField label="Logradouro" name="logradouro" onChange={handleChange} value={formData.logradouro} />
-            <InputField label="Cidade" name="cidade" onChange={handleChange} value={formData.cidade} />
+            <div className="grid grid-cols-2 gap-4">
+              <InputField label="Complemento" name="complemento" placeholder="Ex: Apto 32" onChange={handleChange} value={formData.complemento} />
+              <InputField label="Cidade" name="cidade" onChange={handleChange} value={formData.cidade} />
+            </div>
           </div>
 
           <div className="bg-yellow-400 p-10 rounded-3xl flex flex-col justify-between shadow-xl">
@@ -161,7 +153,7 @@ export default function AlunosPage() {
                       <span className="text-[10px] font-black uppercase text-zinc-500">Localização</span>
                       {aluno.endereco ? (
                         <>
-                          <span className="uppercase font-black">{aluno.endereco.logradouro}, {aluno.endereco.numero}</span>
+                          <span className="uppercase font-black">{aluno.endereco.logradouro}, {aluno.endereco.numero}{aluno.endereco.complemento ? ` — ${aluno.endereco.complemento}` : ''}</span>
                           <span className="uppercase text-zinc-700">{aluno.endereco.bairro}</span>
                           <span className="uppercase text-zinc-700">{aluno.endereco.cidade} - {aluno.endereco.cep}</span>
                         </>

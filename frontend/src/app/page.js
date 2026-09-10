@@ -6,7 +6,7 @@ import { AuthContext } from '../context/authContext';
 
 export default function Home() {
   const router = useRouter();
-  const { user, signOut } = useContext(AuthContext); 
+  const { user, signOut, temPermissao } = useContext(AuthContext); 
   const [carregando, setCarregando] = useState(true);
 
   useEffect(() => {
@@ -18,10 +18,6 @@ export default function Home() {
     }
   }, [router]);
 
-  const temPermissao = (permissaoNecessaria) => {
-    if (!user || !user.permissoes) return false;
-    return user.permissoes.includes('ROLE_DIRETOR') || user.permissoes.includes(permissaoNecessaria);
-  };
 
   if (carregando) {
     return (
@@ -150,6 +146,36 @@ export default function Home() {
                 <p className="text-zinc-500 font-bold mt-2 text-sm leading-relaxed">Gerencie os acessos, logins e senhas da equipe escolar.</p>
               </div>
             </div>
+          )}
+
+          {temPermissao('AVALIACOES_READ') && (
+            <Link href="/views/notas" className="group h-full">
+              <div className="bg-zinc-900 p-8 rounded-3xl border border-zinc-800 shadow-md hover:shadow-xl hover:-translate-y-2 transition-all duration-300 h-full flex flex-col">
+                <div className="flex justify-between items-start mb-8 w-full">
+                  <div className="text-4xl bg-zinc-800 p-4 rounded-2xl">✍️</div>
+                  <span className="text-yellow-400 text-3xl group-hover:translate-x-2 transition-transform flex-shrink-0">&rarr;</span>
+                </div>
+                <div className="flex flex-col flex-grow justify-between">
+                  <h3 className="text-2xl font-black text-white mb-3 uppercase tracking-tight">Notas & Avaliações</h3>
+                  <p className="text-zinc-400 font-bold mt-2 text-sm leading-relaxed">Cadastre as avaliações da turma e lance as notas dos alunos.</p>
+                </div>
+              </div>
+            </Link>
+          )}
+
+          {temPermissao('AVALIACOES_READ') && (
+            <Link href="/views/boletim" className="group h-full">
+              <div className="bg-sky-400 p-8 rounded-3xl border border-sky-300 shadow-md hover:shadow-xl hover:-translate-y-2 transition-all duration-300 h-full flex flex-col">
+                <div className="flex justify-between items-start mb-8 w-full">
+                  <div className="text-4xl bg-sky-300/50 p-4 rounded-2xl">📊</div>
+                  <span className="text-sky-900 text-3xl group-hover:translate-x-2 transition-transform flex-shrink-0">&rarr;</span>
+                </div>
+                <div className="flex flex-col flex-grow justify-between">
+                  <h3 className="text-2xl font-black text-sky-950 mb-3 uppercase tracking-tight">Boletim</h3>
+                  <p className="text-sky-900 font-bold mt-2 text-sm leading-relaxed">Visão consolidada: média ponderada, frequência e situação final.</p>
+                </div>
+              </div>
+            </Link>
           )}
 
           {temPermissao('CONTRATOS_READ') && (

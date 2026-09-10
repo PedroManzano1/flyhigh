@@ -44,4 +44,18 @@ public class NotaController {
     public ResponseEntity<List<Nota>> listarNotasPorAvaliacao(@PathVariable Long idAvaliacao) {
         return ResponseEntity.ok(service.buscarNotasPorAvaliacao(idAvaliacao));
     }
+
+    // Todas as notas da turma: usado no boletim e no resumo da tela de notas
+    @PreAuthorize("hasRole('DIRETOR') or hasAuthority('AVALIACOES_READ')")
+    @GetMapping("/turma/{idTurma}")
+    public ResponseEntity<List<Nota>> listarNotasPorTurma(@PathVariable Long idTurma) {
+        return ResponseEntity.ok(service.buscarNotasPorTurma(idTurma));
+    }
+
+    @PreAuthorize("hasRole('DIRETOR') or hasAuthority('AVALIACOES_DELETE')")
+    @DeleteMapping("/{idAvaliacao}/{idAluno}")
+    public ResponseEntity<Void> excluirNota(@PathVariable Long idAvaliacao, @PathVariable Long idAluno) {
+        service.excluirNota(idAvaliacao, idAluno);
+        return ResponseEntity.noContent().build();
+    }
 }

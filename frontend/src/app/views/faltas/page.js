@@ -1,31 +1,14 @@
 "use client";
 import { useState, useEffect, useContext, useMemo } from 'react';
+import { useFeedback } from '../../../components/feedback';
+import { InputField, SelectField, TextareaField } from '../../../components/ui';
 import api, { mensagemErro } from '../../../utils/api';
 import { useRouter } from 'next/navigation';
 import { AuthContext } from '../../../context/authContext';
 
-const InputField = ({ label, name, placeholder, type = "text", onChange, value, className = "", max, disabled = false }) => (
-  <div className={className}>
-    <label className="block text-sm font-black text-zinc-700 uppercase tracking-widest mb-2">{label}</label>
-    <input type={type} name={name} value={value || ''} onChange={onChange} placeholder={placeholder} max={max} disabled={disabled} className="w-full p-4 border border-zinc-300 rounded-xl text-lg font-bold text-zinc-900 focus:ring-4 focus:ring-yellow-400/20 outline-none transition-all bg-white shadow-sm disabled:bg-zinc-100 disabled:text-zinc-400" />
-  </div>
-);
 
-const SelectField = ({ label, name, children, onChange, value, className = "" }) => (
-  <div className={className}>
-    <label className="block text-sm font-black text-zinc-700 uppercase tracking-widest mb-2">{label}</label>
-    <select name={name} value={value || ''} onChange={onChange} className="w-full p-4 border border-zinc-300 rounded-xl text-lg font-bold text-zinc-900 focus:ring-4 focus:ring-yellow-400/20 outline-none appearance-none bg-white cursor-pointer shadow-sm">{children}</select>
-  </div>
-);
-
-const TextareaField = ({ label, name, placeholder, onChange, value, className = "" }) => (
-  <div className={className}>
-    <label className="block text-sm font-black text-zinc-700 uppercase tracking-widest mb-2">{label}</label>
-    <textarea name={name} value={value || ''} onChange={onChange} placeholder={placeholder} className="w-full p-4 h-32 resize-none border border-zinc-300 rounded-xl text-lg font-bold text-zinc-900 focus:ring-4 focus:ring-yellow-400/20 outline-none transition-all bg-white shadow-sm" />
-  </div>
-);
-
-// Data de hoje no fuso local
+// Data de hoje no fuso local (toISOString devolveria a data em UTC,
+// o que adiantaria um dia no fim da noite no Brasil).
 const hoje = () => {
   const d = new Date();
   const mes = String(d.getMonth() + 1).padStart(2, '0');
@@ -36,6 +19,7 @@ const formatarData = (data) => data ? new Date(data).toLocaleDateString('pt-BR',
 
 export default function FaltasPage() {
   const router = useRouter();
+  const { notificar, confirmar } = useFeedback();
   const { user, temPermissao } = useContext(AuthContext);
 
   const [turmas, setTurmas] = useState([]);
@@ -122,11 +106,11 @@ export default function FaltasPage() {
 
   const handleCriarAula = async (e) => {
     e.preventDefault();
-    if (!turmaSelecionada) return alert("Selecione uma turma antes de registrar a aula.");
-    if (!formAula.dataAula) return alert("Informe a data da aula.");
+    if (!turmaSelecionada) return notificar("Selecione uma turma antes de registrar a aula.", 'alerta');
+    if (!formAula.dataAula) return notificar("Informe a data da aula.", 'alerta');
     // Regra da Estória 12: não é permitido registrar frequência em data futura
-    if (formAula.dataAula > hoje()) return alert("Não é possível registrar uma aula em data futura.");
-    if (!formAula.conteudoLecionado.trim()) return alert("Descreva o conteúdo lecionado na aula.");
+    if (formAula.dataAula > hoje()) return notificar("Não é possível registrar uma aula em data futura.", 'alerta');
+    if (!formAula.conteudoLecionado.trim()) return notificar("Descreva o conteúdo lecionado na aula.", 'alerta');
 
     try {
       const payload = {
@@ -140,17 +124,17 @@ export default function FaltasPage() {
       // Já leva o professor direto para a chamada da aula recém-criada
       if (res.data?.id_aula) router.push(`/views/faltas/editar?id=${res.data.id_aula}`);
     } catch (err) {
-      alert(mensagemErro(err, "Erro ao registrar a aula."));
+      notificar(mensagemErro(err, "Erro ao registrar a aula."), 'erro');
     }
   };
 
   const handleExcluirAula = async (idAula) => {
-    if (!window.confirm("Atenção! Excluir esta aula também apaga a chamada registrada nela. Continuar?")) return;
+    if (!(await confirmar("Atenção! Excluir esta aula também apaga a chamada registrada nela. Continuar?"))) return;
     try {
       await api.delete(`/api/aulas/${idAula}`);
       carregarDadosDaTurma(turmaSelecionada);
     } catch (err) {
-      alert(mensagemErro(err, "Erro ao excluir a aula."));
+      notificar(mensagemErro(err, "Erro ao excluir a aula."), 'erro');
     }
   };
 

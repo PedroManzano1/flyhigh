@@ -1,22 +1,19 @@
 "use client";
 import { useState, useEffect, useContext } from 'react';
-import api from '../../../utils/api';
+import { useFeedback } from '../../../components/feedback';
+import { InputField } from '../../../components/ui';
+import api, { mensagemErro } from '../../../utils/api';
 import { useRouter } from 'next/navigation'; 
 import { AuthContext } from '../../../context/authContext'; 
 
-const InputField = ({ label, name, placeholder, type = "text", onChange, value, className = "" }) => (
-  <div className={className}>
-    <label className="block text-sm font-black text-zinc-700 uppercase tracking-widest mb-2">{label}</label>
-    <input type={type} name={name} value={value || ''} onChange={onChange} placeholder={placeholder} className="w-full p-4 border border-zinc-300 rounded-xl text-lg font-bold text-zinc-900 focus:ring-4 focus:ring-yellow-400/20 outline-none transition-all bg-white shadow-sm" />
-  </div>
-);
 
 const MODULOS = ["USUARIOS", "ALUNOS", "RESPONSAVEIS", "CURSOS", "TURMAS", "VINCULOS",
   "PERFIS", "RECADOS", "CONTRATOS", "FREQUENCIAS", "AVALIACOES"];
 
 export default function PerfisPage() {
   const router = useRouter();
-  const { user } = useContext(AuthContext);
+  const { notificar, confirmar } = useFeedback();
+  const { user, temPermissao } = useContext(AuthContext);
 
   const [perfis, setPerfis] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -30,10 +27,6 @@ export default function PerfisPage() {
   
   const [permissoes, setPermissoes] = useState(permissoesIniciais);
 
-  const temPermissao = (permissaoNecessaria) => {
-    if (!user || !user.permissoes) return false;
-    return user.permissoes.includes('ROLE_DIRETOR') || user.permissoes.includes(permissaoNecessaria);
-  };
 
   const carregarPerfis = async () => {
     setLoading(true);
@@ -58,15 +51,15 @@ export default function PerfisPage() {
 
     try {
       await api.post('/api/perfis', payload);
-      alert("Perfil criado!"); carregarPerfis(); setFormData({ nomePerfil: '', descricao: '' }); setPermissoes(permissoesIniciais);
-    } catch (err) { alert("Erro ao salvar."); }
+      notificar("Perfil criado!"); carregarPerfis(); setFormData({ nomePerfil: '', descricao: '' }); setPermissoes(permissoesIniciais, 'alerta');
+    } catch (err) { notificar(mensagemErro(err, "Erro ao salvar."), 'erro'); }
   };
 
   const handleExcluir = async (id) => {
-    if (window.confirm("Atenção! Deseja excluir este perfil?")) {
+    if (await confirmar("Atenção! Deseja excluir este perfil?")) {
       try {
         await api.delete(`/api/perfis/${id}`); carregarPerfis(); 
-      } catch (err) { alert("Erro ao excluir."); }
+      } catch (err) { notificar(mensagemErro(err, "Erro ao excluir."), 'erro'); }
     }
   };
 

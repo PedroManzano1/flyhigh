@@ -1,37 +1,14 @@
 "use client";
 import { Suspense, useState, useEffect } from 'react';
-import api from '../../../../utils/api';
+import { useFeedback } from '../../../../components/feedback';
+import { InputField, TextareaField } from '../../../../components/ui';
+import api, { mensagemErro } from '../../../../utils/api';
 import { useRouter, useSearchParams } from 'next/navigation'; 
 
-const InputField = ({ label, name, placeholder, type = "text", onChange, value, className = "" }) => (
-  <div className={className}>
-    <label className="block text-sm font-black text-zinc-700 uppercase tracking-wider mb-2">{label}</label>
-    <input
-      type={type} 
-      name={name} 
-      value={value || ''} 
-      onChange={onChange} 
-      placeholder={placeholder}
-      className="w-full p-4 border border-zinc-300 rounded-xl text-lg font-bold text-zinc-900 focus:ring-4 focus:ring-yellow-400/30 focus:border-yellow-400 bg-white transition-all outline-none shadow-sm"
-    />
-  </div>
-);
-
-const TextareaField = ({ label, name, placeholder, onChange, value, className = "" }) => (
-  <div className={className}>
-    <label className="block text-sm font-black text-zinc-700 uppercase tracking-wider mb-2">{label}</label>
-    <textarea 
-      name={name} 
-      value={value || ''} 
-      onChange={onChange} 
-      placeholder={placeholder} 
-      className="w-full p-4 h-48 resize-none border border-zinc-300 rounded-xl text-lg font-bold text-zinc-900 focus:ring-4 focus:ring-yellow-400/30 focus:border-yellow-400 bg-white transition-all outline-none shadow-sm" 
-    />
-  </div>
-);
 
 function EditarRecadoPageConteudo() {
   const router = useRouter();
+  const { notificar } = useFeedback();
   const searchParams = useSearchParams();
   const id = searchParams.get('id');
 
@@ -56,7 +33,7 @@ function EditarRecadoPageConteudo() {
           usuarioAutor: recado.usuarioAutor 
         });
       } catch (err) {
-        alert("Erro ao carregar dados do recado.");
+        notificar(mensagemErro(err, "Erro ao carregar dados do recado."), 'erro');
         router.push('/views/recados'); 
       } finally { setLoading(false); }
     };
@@ -77,9 +54,9 @@ function EditarRecadoPageConteudo() {
 
     try {
       await api.put(`/api/recados/editar/${id}`, payload);
-      alert("Recado atualizado com sucesso!");
+      notificar("Recado atualizado com sucesso!", 'sucesso');
       router.push('/views/recados'); 
-    } catch (err) { alert("Erro ao atualizar o recado."); console.error(err); }
+    } catch (err) { notificar(mensagemErro(err, "Erro ao atualizar o recado.")); console.error(err, 'erro'); }
   };
 
   if (loading) {

@@ -40,6 +40,10 @@ public class NotaService {
         return notaRepo.findByAvaliacaoId(idAvaliacao);
     }
 
+    public List<Nota> buscarNotasPorTurma(Long idTurma) {
+        return notaRepo.findByTurmaId(idTurma);
+    }
+
     @Transactional
     public Nota salvarNota(Nota nota) {
         return notaRepo.save(prepararParaSalvar(nota));
@@ -50,11 +54,34 @@ public class NotaService {
         if (notas == null || notas.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Nenhuma nota foi enviada.");
         }
+
         List<Nota> preparadas = new ArrayList<>();
         for (Nota n : notas) {
-            preparadas.add(prepararParaSalvar(n));
+            Nota preparada = prepararParaSalvar(n);
+
+            // Nota em branco significa "sem lançamento": se já existia, o registro é removido
+            if (preparada.getValorObtido() == null) {
+                notaRepo.findById(preparada.getId()).ifPresent(existente -> notaRepo.delete(existente));
+                continue;
+            }
+            preparadas.add(preparada);
         }
-        return notaRepo.saveAll(preparadas);
+
+        return preparadas.isEmpty() ? preparadas : notaRepo.saveAll(preparadas);
+    }
+
+    @Transactional
+    public void excluirNota(Long idAvaliacao, Long idAluno) {
+        Avaliacao avaliacao = avaliacaoRepo.findById(idAvaliacao)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Avaliação não encontrada."));
+
+        acessoPedagogico.validarLancamentoNaTurma(avaliacao.getTurma());
+
+        NotaKey chave = new NotaKey(idAvaliacao, idAluno);
+        if (!notaRepo.existsById(chave)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Nota não encontrada.");
+        }
+        notaRepo.deleteById(chave);
     }
 
     private Nota prepararParaSalvar(Nota nota) {

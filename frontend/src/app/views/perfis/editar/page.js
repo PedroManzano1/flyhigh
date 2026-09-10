@@ -1,18 +1,10 @@
 "use client";
 import { Suspense, useState, useEffect } from 'react';
-import api from '../../../../utils/api'; 
+import { useFeedback } from '../../../../components/feedback';
+import { InputField } from '../../../../components/ui';
+import api, { mensagemErro } from '../../../../utils/api'; 
 import { useRouter, useSearchParams } from 'next/navigation'; 
 
-// --- COMPONENTES UTILITÁRIOS ---
-const InputField = ({ label, name, placeholder, type = "text", onChange, value, className = "" }) => (
-  <div className={className}>
-    <label className="block text-sm font-black text-zinc-700 uppercase tracking-wider mb-2">{label}</label>
-    <input
-      type={type} name={name} value={value || ''} onChange={onChange} placeholder={placeholder}
-      className="w-full p-4 border border-zinc-300 rounded-xl text-lg font-bold text-zinc-900 focus:ring-4 focus:ring-yellow-400/30 focus:border-yellow-400 bg-white transition-all outline-none shadow-sm"
-    />
-  </div>
-);
 
 const MODULOS = ["USUARIOS", "ALUNOS", "RESPONSAVEIS", "CURSOS", "TURMAS", "VINCULOS",
   "PERFIS", "RECADOS", "CONTRATOS", "FREQUENCIAS", "AVALIACOES"];
@@ -26,6 +18,7 @@ const ROTULOS_MODULO = {
 
 function EditarPerfilPageConteudo() {
   const router = useRouter();
+  const { notificar } = useFeedback();
   const searchParams = useSearchParams();
   const id = searchParams.get('id');
 
@@ -70,7 +63,7 @@ function EditarPerfilPageConteudo() {
           setPermissoes(permsAtualizadas);
         }
       } catch (err) {
-        alert("Erro ao carregar dados do perfil.");
+        notificar(mensagemErro(err, "Erro ao carregar dados do perfil."), 'erro');
         router.push('/views/perfis'); 
       } finally {
         setLoading(false);
@@ -111,10 +104,10 @@ function EditarPerfilPageConteudo() {
 
     try {
       await api.put(`/api/perfis/editar/${id}`, payload);
-      alert("Perfil e acessos atualizados com sucesso!");
+      notificar("Perfil e acessos atualizados com sucesso!", 'sucesso');
       router.push('/views/perfis'); 
     } catch (err) {
-      alert("Erro ao atualizar perfil.");
+      notificar(mensagemErro(err, "Erro ao atualizar perfil."), 'erro');
       console.error(err);
     }
   };

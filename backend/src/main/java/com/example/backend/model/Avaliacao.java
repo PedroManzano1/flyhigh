@@ -19,6 +19,10 @@ public class Avaliacao {
     @Column(name = "nota_maxima")
     private Double notaMaxima;
 
+    // Peso da avaliação em porcentagem (0 a 100). A soma dos pesos da turma fecha 100%.
+    @Column(name = "peso")
+    private Double peso;
+
     @Column(name = "data")
     private LocalDate data;
 

@@ -1,9 +1,11 @@
 "use client";
 import { useState, useContext, useEffect } from 'react';
+import { useFeedback } from '../../components/feedback';
 import { AuthContext } from '../../context/authContext';
 import api from '../../utils/api';
 
 export default function Login() {
+  const { notificar } = useFeedback();
     const { signIn } = useContext(AuthContext);
     const [login, setLogin] = useState('');
     const [senha, setSenha] = useState('');
@@ -25,14 +27,14 @@ export default function Login() {
         try {
             if (isPrimeiroAcesso) {
                 await api.post('/api/auth/criar-diretor', { login, senha });
-                alert("Diretor criado com sucesso! Agora faça o login para entrar.");
+                notificar("Diretor criado com sucesso! Agora faça o login para entrar.", 'sucesso');
                 setIsPrimeiroAcesso(false);
                 setSenha('');
             } else {
                 await signIn(login, senha);
             }
         } catch (error) {
-            alert("Ocorreu um erro. Verifique suas credenciais.");
+            notificar("Ocorreu um erro. Verifique suas credenciais.", 'alerta');
         }
     };
 

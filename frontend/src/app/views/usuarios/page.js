@@ -1,27 +1,16 @@
 "use client";
 import { useState, useEffect, useContext } from 'react';
-import api from '../../../utils/api';
+import { useFeedback } from '../../../components/feedback';
+import { InputField, SelectField } from '../../../components/ui';
+import api, { mensagemErro } from '../../../utils/api';
 import { useRouter } from 'next/navigation';
 import { AuthContext } from '../../../context/authContext'; 
 
-// --- COMPONENTES UTILITÁRIOS PADRONIZADOS ---
-const InputField = ({ label, name, placeholder, type = "text", onChange, value, className = "", required = false }) => (
-  <div className={className}>
-    <label className="block text-xs font-black text-zinc-700 uppercase tracking-widest mb-2">{label}</label>
-    <input type={type} name={name} value={value || ''} onChange={onChange} placeholder={placeholder} required={required} className="w-full p-4 border border-zinc-300 rounded-xl text-lg font-bold text-zinc-900 focus:ring-4 focus:ring-yellow-400/20 outline-none transition-all bg-white shadow-sm" />
-  </div>
-);
-
-const SelectField = ({ label, name, children, onChange, value, className = "", required = false }) => (
-  <div className={className}>
-    <label className="block text-xs font-black text-zinc-700 uppercase tracking-widest mb-2">{label}</label>
-    <select name={name} value={value || ''} onChange={onChange} required={required} className="w-full p-4 border border-zinc-300 rounded-xl text-lg font-bold text-zinc-900 focus:ring-4 focus:ring-yellow-400/20 outline-none appearance-none bg-white cursor-pointer shadow-sm">{children}</select>
-  </div>
-);
 
 export default function UsuariosPage() {
   const router = useRouter();
-  const { user } = useContext(AuthContext);
+  const { notificar, confirmar } = useFeedback();
+  const { user, temPermissao } = useContext(AuthContext);
 
   const [usuarios, setUsuarios] = useState([]);
   const [perfis, setPerfis] = useState([]);
@@ -31,10 +20,6 @@ export default function UsuariosPage() {
     nome: '', login: '', senha: '', idPerfil: ''
   });
 
-  const temPermissao = (permissaoNecessaria) => {
-    if (!user || !user.permissoes) return false;
-    return user.permissoes.includes('ROLE_DIRETOR') || user.permissoes.includes(permissaoNecessaria);
-  };
 
   const carregarDados = async () => {
     setLoading(true);
@@ -56,7 +41,7 @@ export default function UsuariosPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.idPerfil) return alert("Selecione um perfil!");
+    if (!formData.idPerfil) return notificar("Selecione um perfil!", 'alerta');
 
     const payload = {
       nome: formData.nome, login: formData.login, senha: formData.senha,
@@ -65,18 +50,28 @@ export default function UsuariosPage() {
 
     try {
       await api.post('/api/usuarios', payload);
-      alert("Colaborador cadastrado!");
+      notificar("Colaborador cadastrado!", 'sucesso');
       setFormData({ nome: '', login: '', senha: '', idPerfil: '' });
       carregarDados();
-    } catch (err) { alert("Erro ao salvar usuário."); }
+    } catch (err) { notificar(mensagemErro(err, "Erro ao salvar usuário."), 'erro'); }
+  };
+
+  const alternarStatus = async (u) => {
+    const novoStatus = (u.status || 'ATIVO').toUpperCase() === 'ATIVO' ? 'INATIVO' : 'ATIVO';
+    const acao = novoStatus === 'INATIVO' ? 'inativar' : 'reativar';
+    if (!(await confirmar(`Deseja ${acao} o acesso de ${u.nome}?`))) return;
+    try {
+      await api.patch(`/api/usuarios/${u.idUsuario}/status`, { status: novoStatus });
+      carregarDados();
+    } catch (err) { notificar(mensagemErro(err, "Erro ao alterar a situação do acesso."), 'erro'); }
   };
 
   const excluirUsuario = async (id) => {
-    if (confirm("Deseja remover o acesso deste colaborador permanentemente?")) {
+    if (await confirmar("Deseja remover o acesso deste colaborador permanentemente?")) {
       try {
         await api.delete(`/api/usuarios/${id}`);
         carregarDados();
-      } catch (err) { alert("Erro ao excluir."); }
+      } catch (err) { notificar(mensagemErro(err, "Erro ao excluir."), 'erro'); }
     }
   };
 
@@ -124,7 +119,7 @@ export default function UsuariosPage() {
         <div className={temPermissao('USUARIOS_WRITE') ? "xl:col-span-2" : "xl:col-span-3"}>
           <div className="bg-white rounded-[2.5rem] shadow-md border border-zinc-200 overflow-hidden">
             <div className="p-8 border-b border-zinc-200 bg-zinc-100/30">
-              <h2 className="font-black text-lg uppercase text-zinc-800 tracking-tighter">Database: Colaboradores Ativos</h2>
+              <h2 className="font-black text-lg uppercase text-zinc-800 tracking-tighter">Database: Colaboradores</h2>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left">
@@ -133,11 +128,12 @@ export default function UsuariosPage() {
                     <th className="p-6 font-black uppercase text-xs tracking-widest text-zinc-600">Colaborador</th>
                     <th className="p-6 font-black uppercase text-xs tracking-widest text-zinc-800">Dados de Acesso</th>
                     <th className="p-6 font-black uppercase text-xs tracking-widest text-zinc-800">Perfil / Cargo</th>
+                    <th className="p-6 font-black uppercase text-xs tracking-widest text-zinc-800 text-center">Situação</th>
                     <th className="p-6 font-black uppercase text-xs tracking-widest text-zinc-800 text-center">Gestão</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {loading && <tr><td colSpan="4" className="p-10 text-center uppercase italic font-black text-zinc-500 animate-pulse">Carregando Equipe...</td></tr>}
+                  {loading && <tr><td colSpan="5" className="p-10 text-center uppercase italic font-black text-zinc-500 animate-pulse">Carregando Equipe...</td></tr>}
                   
                   {!loading && usuarios.map(u => (
                     <tr key={u.idUsuario} className="border-b border-zinc-100 hover:bg-yellow-50/50 transition-colors">
@@ -152,8 +148,22 @@ export default function UsuariosPage() {
                           {u.perfil?.nomePerfil || 'SEM PERFIL'}
                         </span>
                       </td>
+                      <td className="p-6 align-middle text-center">
+                        <span className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest border ${(u.status || 'ATIVO').toUpperCase() === 'ATIVO' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
+                          {(u.status || 'ATIVO').toUpperCase() === 'ATIVO' ? 'Ativo' : 'Inativo'}
+                        </span>
+                      </td>
                       <td className="p-6 align-middle">
                         <div className="flex justify-center gap-3">
+                          {temPermissao('USUARIOS_WRITE') && (
+                            <button
+                              onClick={() => alternarStatus(u)}
+                              className="w-12 h-12 flex items-center justify-center bg-white text-zinc-900 border-2 border-zinc-200 hover:bg-zinc-900 hover:text-white rounded-xl transition-all shadow-md text-xl"
+                              title={(u.status || 'ATIVO').toUpperCase() === 'ATIVO' ? 'Inativar acesso' : 'Reativar acesso'}
+                            >
+                              {(u.status || 'ATIVO').toUpperCase() === 'ATIVO' ? '🚫' : '✔'}
+                            </button>
+                          )}
                           {temPermissao('USUARIOS_WRITE') && (
                             <button onClick={() => router.push(`/views/usuarios/editar?id=${u.idUsuario}`)} className="w-12 h-12 flex items-center justify-center bg-zinc-900 text-white hover:bg-yellow-400 hover:text-zinc-900 rounded-xl transition-all shadow-md text-xl" title="Editar Usuário">✎</button>
                           )}
@@ -166,7 +176,7 @@ export default function UsuariosPage() {
                   ))}
 
                   {!loading && usuarios.length === 0 && (
-                     <tr><td colSpan="4" className="p-8 text-center text-zinc-500 uppercase font-black italic">Nenhum colaborador encontrado.</td></tr>
+                     <tr><td colSpan="5" className="p-8 text-center text-zinc-500 uppercase font-black italic">Nenhum colaborador encontrado.</td></tr>
                   )}
                 </tbody>
               </table>

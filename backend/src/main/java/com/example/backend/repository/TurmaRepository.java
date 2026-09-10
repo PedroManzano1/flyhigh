@@ -9,4 +9,7 @@ public interface TurmaRepository extends JpaRepository<Turma, Long> {
 
     @Query("SELECT COUNT(t) FROM Turma t WHERE t.curso.id_curso = :idCurso")
     long contarPorCurso(@Param("idCurso") Long idCurso);
+
+    @Query("SELECT COUNT(t) FROM Turma t WHERE t.professor.idUsuario = :idProfessor")
+    long contarPorProfessor(@Param("idProfessor") Integer idProfessor);
 }

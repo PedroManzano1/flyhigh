@@ -1,26 +1,14 @@
 "use client";
 import { Suspense, useState, useEffect } from 'react';
-import api from '../../../../utils/api';
+import { useFeedback } from '../../../../components/feedback';
+import { InputField, SelectField } from '../../../../components/ui';
+import api, { mensagemErro } from '../../../../utils/api';
 import { useRouter, useSearchParams } from 'next/navigation'; 
 
-const InputField = ({ label, name, placeholder, type = "text", onChange, value, className = "" }) => (
-  <div className={className}>
-    <label className="block text-sm font-black text-zinc-700 uppercase tracking-wider mb-2">{label}</label>
-    <input type={type} name={name} value={value || ''} onChange={onChange} placeholder={placeholder} className="w-full p-4 border border-zinc-300 rounded-xl text-lg font-bold text-zinc-900 focus:ring-4 focus:ring-yellow-400/30 focus:border-yellow-400 bg-white transition-all outline-none shadow-sm" />
-  </div>
-);
-
-const SelectField = ({ label, name, children, onChange, value }) => (
-  <div>
-    <label className="block text-sm font-black text-zinc-700 uppercase tracking-wider mb-2">{label}</label>
-    <select name={name} value={value || ''} onChange={onChange} className="w-full p-4 border border-zinc-300 rounded-xl text-lg font-bold text-zinc-900 focus:ring-4 focus:ring-yellow-400/30 bg-white transition-all outline-none appearance-none cursor-pointer shadow-sm">
-      {children}
-    </select>
-  </div>
-);
 
 function EditarTurmaPageConteudo() {
   const router = useRouter();
+  const { notificar } = useFeedback();
   const searchParams = useSearchParams();
   const id = searchParams.get('id');
 
@@ -63,7 +51,7 @@ function EditarTurmaPageConteudo() {
           idProfessor: turma.professor ? String(turma.professor.idUsuario) : ''
         });
       } catch (err) {
-        alert("Erro ao carregar dados.");
+        notificar(mensagemErro(err, "Erro ao carregar dados."), 'erro');
         router.push('/views/turmas'); 
       } finally {
         setLoading(false);
@@ -91,10 +79,10 @@ function EditarTurmaPageConteudo() {
 
     try {
       await api.put(`/api/turmas/editar/${id}`, payload);
-      alert("Turma atualizada com sucesso!");
+      notificar("Turma atualizada com sucesso!", 'sucesso');
       router.push('/views/turmas'); 
     } catch (err) {
-      alert("Erro ao atualizar turma.");
+      notificar(mensagemErro(err, "Erro ao atualizar turma."), 'erro');
       console.error(err);
     }
   };

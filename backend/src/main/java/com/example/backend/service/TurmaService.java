@@ -3,6 +3,9 @@ package com.example.backend.service;
 import com.example.backend.model.Curso;
 import com.example.backend.model.Turma;
 import com.example.backend.model.Usuario;
+import com.example.backend.repository.AulaRepository;
+import com.example.backend.repository.AvaliacaoRepository;
+import com.example.backend.repository.ContratoRepository;
 import com.example.backend.repository.CursoRepository;
 import com.example.backend.repository.TurmaRepository;
 import com.example.backend.repository.UsuarioRepository;
@@ -25,6 +28,15 @@ public class TurmaService {
 
     @Autowired
     private UsuarioRepository usuarioRepo;
+
+    @Autowired
+    private AulaRepository aulaRepo;
+
+    @Autowired
+    private AvaliacaoRepository avaliacaoRepo;
+
+    @Autowired
+    private ContratoRepository contratoRepo;
 
     public Turma salvar(Turma turma) {
         if (turma.getCodigoTurma() == null || turma.getCodigoTurma().isBlank()) {
@@ -68,7 +80,33 @@ public class TurmaService {
         return turmaRepo.findById(id);
     }
 
+    /**
+     * Exclusão protegida: turma com diário, avaliação ou matrícula preserva o histórico.
+     */
     public void excluir(Long id) {
-        turmaRepo.deleteById(id);
+        Turma turma = turmaRepo.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Turma não encontrada."));
+
+        long aulas = aulaRepo.contarPorTurma(id);
+        long avaliacoes = avaliacaoRepo.contarPorTurma(id);
+        long matriculas = contratoRepo.contarPorTurma(id);
+
+        if (aulas > 0 || avaliacoes > 0 || matriculas > 0) {
+            StringBuilder itens = new StringBuilder();
+            if (aulas > 0) itens.append(aulas).append(" aula(s)");
+            if (avaliacoes > 0) {
+                if (itens.length() > 0) itens.append(", ");
+                itens.append(avaliacoes).append(" avaliação(ões)");
+            }
+            if (matriculas > 0) {
+                if (itens.length() > 0) itens.append(" e ");
+                itens.append(matriculas).append(" matrícula(s)");
+            }
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Esta turma não pode ser excluída porque possui " + itens
+                            + ". Altere o status da turma para \"Fechada\" em vez de excluir.");
+        }
+
+        turmaRepo.delete(turma);
     }
 }

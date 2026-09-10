@@ -2,8 +2,11 @@ package com.example.backend.repository;
 
 import com.example.backend.model.Perfil;
 import org.springframework.data.jpa.repository.JpaRepository;
-import java.util.Optional;
+
+import java.util.List;
 
 public interface PerfilRepository extends JpaRepository<Perfil, Integer> {
-    Optional<Perfil> findByNomePerfil(String nomePerfil);
+
+    // Lista (e não Optional) para não estourar se houver nomes duplicados na base antiga
+    List<Perfil> findByNomePerfilIgnoreCase(String nomePerfil);
 }

@@ -49,6 +49,17 @@ public class AulaService {
         // Professor só registra aula na turma em que está vinculado
         acessoPedagogico.validarLancamentoNaTurma(turmaReal);
 
+        // Duas aulas da mesma turma no mesmo dia duplicariam a chamada e distorceriam a frequência
+        boolean dataOcupada = aulaRepo
+                .buscarPorTurmaEData(turmaReal.getId_turma(), aula.getDataAula()).stream()
+                .anyMatch(existente -> !existente.getId_aula().equals(aula.getId_aula()));
+
+        if (dataOcupada) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Já existe uma aula registrada para esta turma em "
+                            + aula.getDataAula() + ". Edite a aula existente em vez de criar outra.");
+        }
+
         aula.setTurma(turmaReal);
 
         return aulaRepo.save(aula);

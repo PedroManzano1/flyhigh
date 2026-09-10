@@ -1,5 +1,7 @@
 "use client";
 import { useState, useEffect, useContext, useMemo } from 'react';
+import { useFeedback } from '../../../components/feedback';
+import { SelectField } from '../../../components/ui';
 import api, { mensagemErro } from '../../../utils/api';
 import { useRouter } from 'next/navigation';
 import { AuthContext } from '../../../context/authContext';
@@ -9,14 +11,10 @@ import { AuthContext } from '../../../context/authContext';
  *
  * Serve apenas para ligar Aluno <-> Turma (tabela CONTRATO) e assim liberar
  * o teste da chamada (Faltas) e do lançamento de notas.
+ * A Estória 7 (contrato completo: responsável financeiro, desconto, convênio,
+ * geração do PDF e parcelas) ainda será implementada e vai substituir esta tela.
  */
 
-const SelectField = ({ label, name, children, onChange, value, className = "" }) => (
-  <div className={className}>
-    <label className="block text-sm font-black text-zinc-700 uppercase tracking-widest mb-2">{label}</label>
-    <select name={name} value={value || ''} onChange={onChange} className="w-full p-4 border border-zinc-300 rounded-xl text-lg font-bold text-zinc-900 focus:ring-4 focus:ring-yellow-400/20 outline-none appearance-none bg-white cursor-pointer shadow-sm">{children}</select>
-  </div>
-);
 
 const STATUS_MATRICULA = ['Ativo', 'Trancado', 'Cancelado'];
 
@@ -29,6 +27,7 @@ const corDoStatus = (status) => {
 
 export default function MatriculasPage() {
   const router = useRouter();
+  const { notificar, confirmar } = useFeedback();
   const { temPermissao } = useContext(AuthContext);
 
   const [turmas, setTurmas] = useState([]);
@@ -98,8 +97,8 @@ export default function MatriculasPage() {
 
   const handleMatricular = async (e) => {
     e.preventDefault();
-    if (!turmaSelecionada) return alert("Selecione a turma.");
-    if (!alunoSelecionado) return alert("Selecione o aluno.");
+    if (!turmaSelecionada) return notificar("Selecione a turma.", 'alerta');
+    if (!alunoSelecionado) return notificar("Selecione o aluno.", 'alerta');
 
     setSalvando(true);
     try {
@@ -111,7 +110,7 @@ export default function MatriculasPage() {
       setAlunoSelecionado('');
       await carregarMatriculas(turmaSelecionada);
     } catch (err) {
-      alert(mensagemErro(err, "Erro ao matricular o aluno."));
+      notificar(mensagemErro(err, "Erro ao matricular o aluno."), 'erro');
     } finally {
       setSalvando(false);
     }
@@ -128,17 +127,17 @@ export default function MatriculasPage() {
       });
       carregarMatriculas(turmaSelecionada);
     } catch (err) {
-      alert(mensagemErro(err, "Erro ao alterar o status da matrícula."));
+      notificar(mensagemErro(err, "Erro ao alterar o status da matrícula."), 'erro');
     }
   };
 
   const handleExcluir = async (idContrato) => {
-    if (!window.confirm("Remover esta matrícula da turma?")) return;
+    if (!(await confirmar("Remover esta matrícula da turma?"))) return;
     try {
       await api.delete(`/api/contratos/${idContrato}`);
       carregarMatriculas(turmaSelecionada);
     } catch (err) {
-      alert(mensagemErro(err, "Erro ao remover a matrícula."));
+      notificar(mensagemErro(err, "Erro ao remover a matrícula."), 'erro');
     }
   };
 

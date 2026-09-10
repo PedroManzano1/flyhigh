@@ -26,4 +26,7 @@ public interface FrequenciaRepository extends JpaRepository<Frequencia, Frequenc
     @Modifying
     @Query("DELETE FROM Frequencia f WHERE f.aula.id_aula = :idAula")
     void deleteByAulaId(@Param("idAula") Long idAula);
+
+    @Query("SELECT COUNT(f) FROM Frequencia f WHERE f.aluno.id_aluno = :idAluno")
+    long contarPorAluno(@Param("idAluno") Long idAluno);
 }

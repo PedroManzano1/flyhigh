@@ -29,4 +29,10 @@ public interface ContratoRepository extends JpaRepository<Contrato, Integer> {
 
     @Query("SELECT COUNT(c) FROM Contrato c WHERE c.turma.curso.id_curso = :idCurso")
     long contarPorCurso(@Param("idCurso") Long idCurso);
+
+    @Query("SELECT COUNT(c) FROM Contrato c WHERE c.turma.id_turma = :idTurma")
+    long contarPorTurma(@Param("idTurma") Long idTurma);
+
+    @Query("SELECT COUNT(c) FROM Contrato c WHERE c.aluno.id_aluno = :idAluno")
+    long contarPorAluno(@Param("idAluno") Long idAluno);
 }
