@@ -245,8 +245,8 @@ function LancamentoConteudo() {
                 O espelho de notas usa as matrículas ativas da turma. Matricule os alunos para liberar o lançamento.
               </p>
               {temPermissao('CONTRATOS_READ') && (
-                <button type="button" onClick={() => router.push('/views/matriculas')} className="px-6 py-3 bg-zinc-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-yellow-400 hover:text-zinc-900 transition-all shadow-md">
-                  Ir para Matrículas
+                <button type="button" onClick={() => router.push('/views/contratos')} className="px-6 py-3 bg-zinc-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-yellow-400 hover:text-zinc-900 transition-all shadow-md">
+                  Ir para Contratos
                 </button>
               )}
             </div>

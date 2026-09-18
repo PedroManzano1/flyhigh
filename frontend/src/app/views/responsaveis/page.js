@@ -23,7 +23,7 @@ export default function ResponsaveisPage() {
 
   const [error, setError] = useState(null);
 
-  const estadoInicialResp = { nome: '', dataNascimento: '', rg: '', cpf: '', cep: '', logradouro: '', numero: '', complemento: '', bairro: '', cidade: '', telefonePrincipal: '', telefoneSecundario: '' };
+  const estadoInicialResp = { nome: '', dataNascimento: '', rg: '', cpf: '', cep: '', logradouro: '', numero: '', complemento: '', bairro: '', cidade: '', telefonePrincipal: '', telefoneSecundario: '', nomeConjuge: '', telefoneConjuge: '' };
   const estadoInicialVinculo = { id_aluno: '', id_responsavel: '', grauParentesco: '', isResponsavelFinanceiro: 'false' };
 
   const [formData, setFormData] = useState(estadoInicialResp);
@@ -66,7 +66,7 @@ export default function ResponsaveisPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const payload = { nome: formData.nome, dataNascimento: formData.dataNascimento, rg: formData.rg, cpf: formData.cpf, telefonePrincipal: formData.telefonePrincipal, telefoneSecundario: formData.telefoneSecundario, endereco: { cep: formData.cep, logradouro: formData.logradouro, numero: formData.numero, complemento: formData.complemento, bairro: formData.bairro, cidade: formData.cidade } };
+    const payload = { nome: formData.nome, dataNascimento: formData.dataNascimento, rg: formData.rg, cpf: formData.cpf, telefonePrincipal: formData.telefonePrincipal, telefoneSecundario: formData.telefoneSecundario, nomeConjuge: formData.nomeConjuge || null, telefoneConjuge: formData.telefoneConjuge || null, endereco: { cep: formData.cep, logradouro: formData.logradouro, numero: formData.numero, complemento: formData.complemento, bairro: formData.bairro, cidade: formData.cidade } };
     try {
       await api.post('/api/responsaveis', payload);
       notificar("Responsável salvo com sucesso!", 'sucesso');
@@ -144,6 +144,14 @@ export default function ResponsaveisPage() {
               <InputField label="CPF" name="cpf" placeholder="000.000.000-00" onChange={handleChange} value={formData.cpf} />
             </div>
             <InputField label="RG" name="rg" placeholder="Identidade" onChange={handleChange} value={formData.rg} />
+
+            <div className="border-t border-zinc-100 pt-6 space-y-4">
+              <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                Cônjuge (opcional — puxado no contrato)
+              </p>
+              <InputField label="Nome do Cônjuge" name="nomeConjuge" placeholder="Ex: John Smith" onChange={handleChange} value={formData.nomeConjuge} />
+              <InputField label="Tel. do Cônjuge" name="telefoneConjuge" placeholder="(00) 00000-0000" onChange={handleChange} value={formData.telefoneConjuge} />
+            </div>
           </div>
 
           <div className="bg-white p-8 rounded-3xl border border-zinc-200 shadow-sm space-y-6">
@@ -168,7 +176,7 @@ export default function ResponsaveisPage() {
             <div>
               <h2 className="font-black text-3xl uppercase mb-4 italic text-zinc-900">Ground Control 🎧</h2>
               <p className="font-black text-zinc-900 text-lg leading-snug">
-                Na FlyHigh, a família é a torre de controle dos nossos alunos. Revise o CPF e os contatos de emergência com atenção para garantir uma comunicação impecável em solo.
+                Na Fly High, a família é a torre de controle dos nossos alunos. Revise o CPF e os contatos de emergência com atenção para garantir uma comunicação impecável em solo.
               </p>
             </div>
             <div className="flex flex-col gap-3 mt-10">
@@ -239,11 +247,12 @@ export default function ResponsaveisPage() {
                 <th className="p-6 font-black uppercase text-xs text-zinc-800 tracking-widest">Documentos</th>
                 <th className="p-6 font-black uppercase text-xs text-zinc-800 tracking-widest">Endereço Completo</th>
                 <th className="p-6 font-black uppercase text-xs text-zinc-800 tracking-widest">Contatos</th>
+                <th className="p-6 font-black uppercase text-xs text-zinc-800 tracking-widest">Cônjuge</th>
                 <th className="p-6 font-black uppercase text-xs text-center text-zinc-800 tracking-widest">Gestão</th>
               </tr>
             </thead>
             <tbody>
-              {loading && <LinhaCarregando colunas={8} texto="Carregando Responsáveis..." />}
+              {loading && <LinhaCarregando colunas={9} texto="Carregando Responsáveis..." />}
 
               {!loading && responsaveisFiltrados.map(resp => (
                 <tr key={resp.id_responsavel} className="border-b border-zinc-100 hover:bg-yellow-50/50 transition-colors">
@@ -336,7 +345,24 @@ export default function ResponsaveisPage() {
                       )}
                     </div>
                   </td>
-                  
+
+                  {/* CÔNJUGE — só aparece quando foi preenchido */}
+                  <td className="p-6 align-top">
+                    {resp.nomeConjuge || resp.telefoneConjuge ? (
+                      <div className="flex flex-col gap-1 text-sm">
+                        <span className="font-black text-zinc-900 uppercase">{resp.nomeConjuge || '---'}</span>
+                        {resp.telefoneConjuge && (
+                          <span className="flex items-center gap-2 font-black text-zinc-700">
+                            <span className="bg-sky-100 text-sky-700 px-2 py-1 rounded-md text-[10px] tracking-widest">TEL</span>
+                            {resp.telefoneConjuge}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-zinc-400 italic text-sm font-bold">Não informado</span>
+                    )}
+                  </td>
+
                   {/* GESTÃO */}
                   <td className="p-6 align-middle">
                     <div className="flex justify-center gap-3">
@@ -352,7 +378,7 @@ export default function ResponsaveisPage() {
               ))}
 
               {!loading && responsaveisFiltrados.length === 0 && (
-                <LinhaVazia colunas={8} texto="Nenhum responsável encontrado." />
+                <LinhaVazia colunas={9} texto="Nenhum responsável encontrado." />
               )}
             </tbody>
           </table>

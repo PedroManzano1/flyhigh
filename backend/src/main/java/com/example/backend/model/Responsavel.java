@@ -29,6 +29,14 @@ public class Responsavel {
     @Column(name = "telefone_secundario")
     private String telefoneSecundario;
 
+    // Opcionais. O contrato pede o nome do cônjuge do contratante, então guardar
+    // aqui evita digitar o mesmo dado a cada contrato novo.
+    @Column(name = "nome_conjuge")
+    private String nomeConjuge;
+
+    @Column(name = "telefone_conjuge")
+    private String telefoneConjuge;
+
     // Mapeamento da FK id_endereco
     @ManyToOne
     @JoinColumn(name = "id_endereco")

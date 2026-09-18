@@ -36,7 +36,7 @@ export default function BoletimPage() {
         setTurmas(Array.isArray(res.data) ? res.data : []);
         setErro(null);
       } catch (err) {
-        setErro("Erro de conexão com o servidor FlyHigh.");
+        setErro("Erro de conexão com o servidor Fly High.");
       } finally {
         setLoading(false);
       }
@@ -350,8 +350,8 @@ export default function BoletimPage() {
                     <div className="flex flex-col items-center gap-4">
                       <span className="text-zinc-500 uppercase font-black italic">Nenhum aluno com matrícula ativa nesta turma.</span>
                       {temPermissao('CONTRATOS_READ') && (
-                        <button type="button" onClick={() => router.push('/views/matriculas')} className="px-6 py-3 bg-zinc-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-yellow-400 hover:text-zinc-900 transition-all shadow-md">
-                          Ir para Matrículas
+                        <button type="button" onClick={() => router.push('/views/contratos')} className="px-6 py-3 bg-zinc-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-yellow-400 hover:text-zinc-900 transition-all shadow-md">
+                          Ir para Contratos
                         </button>
                       )}
                     </div>
@@ -363,7 +363,7 @@ export default function BoletimPage() {
         </div>
 
         <div className="bg-zinc-50 p-6 border-t border-zinc-200 flex justify-between items-center flex-wrap gap-3 text-xs font-black uppercase tracking-widest text-zinc-500 rounded-b-[2.5rem]">
-          <span>FlyHigh Idiomas v1.0 · Nota final = soma de (nota x peso%)</span>
+          <span>Fly High Idiomas v1.0 · Nota final = soma de (nota x peso%)</span>
           <span>Total: {alunosFiltrados.length} Alunos</span>
         </div>
       </section>

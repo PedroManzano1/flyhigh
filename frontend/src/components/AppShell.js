@@ -14,7 +14,7 @@ const MODULOS = [
   { href: '/views/responsaveis', rotulo: 'Responsáveis', icone: '👥', permissao: 'RESPONSAVEIS_READ' },
   { href: '/views/cursos', rotulo: 'Cursos', icone: '📚', permissao: 'CURSOS_READ' },
   { href: '/views/turmas', rotulo: 'Turmas', icone: '🗓️', permissao: 'TURMAS_READ' },
-  { href: '/views/matriculas', rotulo: 'Matrículas', icone: '📄', permissao: 'CONTRATOS_READ' },
+  { href: '/views/contratos', rotulo: 'Contratos', icone: '📄', permissao: 'CONTRATOS_READ' },
   { href: '/views/faltas', rotulo: 'Faltas', icone: '📋', permissao: 'FREQUENCIAS_READ' },
   { href: '/views/notas', rotulo: 'Notas', icone: '✍️', permissao: 'AVALIACOES_READ' },
   { href: '/views/boletim', rotulo: 'Boletim', icone: '📊', permissao: 'AVALIACOES_READ' },
@@ -43,7 +43,7 @@ export default function AppShell({ children }) {
     }
   }, [carregandoUsuario, user, router]);
 
-  if (carregandoUsuario) return <TelaDeEspera texto="Carregando FlyHigh..." />;
+  if (carregandoUsuario) return <TelaDeEspera texto="Carregando Fly High..." />;
   if (!user) return <TelaDeEspera texto="Redirecionando para o login..." />;
 
   const modulosLiberados = MODULOS.filter(m => temPermissao(m.permissao));
@@ -54,7 +54,7 @@ export default function AppShell({ children }) {
       <nav className="bg-zinc-900 px-6 md:px-10 py-5 flex justify-between items-center shadow-md border-b-4 border-zinc-950 gap-4">
         <Link href="/" className="shrink-0">
           <h2 className="text-xl md:text-2xl font-black text-white flex items-center gap-2 tracking-tighter">
-            <span className="bg-yellow-400 text-zinc-900 px-3 py-1 rounded-xl shadow-sm">FLYHIGH</span>
+            <span className="bg-yellow-400 text-zinc-900 px-3 py-1 rounded-xl shadow-sm">FLY HIGH</span>
             <span className="hidden sm:inline">IDIOMAS</span>
           </h2>
         </Link>
@@ -110,7 +110,7 @@ export default function AppShell({ children }) {
 
       <footer className="px-10 py-6 text-center border-t border-zinc-200 bg-white">
         <p className="text-zinc-400 text-xs font-black tracking-widest uppercase">
-          &copy; 2026 FlyHigh Idiomas | Admin Panel v1.0
+          &copy; 2026 Fly High Idiomas | Admin Panel v1.0
         </p>
       </footer>
     </div>

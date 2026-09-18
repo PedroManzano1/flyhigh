@@ -22,7 +22,7 @@ export default function Home() {
   if (carregando) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center font-black uppercase text-zinc-400 animate-pulse text-xl tracking-widest">
-        Carregando FlyHigh...
+        Carregando Fly High...
       </div>
     );
   }
@@ -33,7 +33,7 @@ export default function Home() {
       {/* NAVBAR RESTAURADA: Fundo escuro, IDIOMAS em branco e borda preta */}
       <nav className="bg-zinc-900 px-10 py-5 flex justify-between items-center shadow-md border-b-4 border-zinc-950">
         <h2 className="text-2xl font-black text-white flex items-center gap-2 tracking-tighter">
-          <span className="bg-yellow-400 text-zinc-900 px-3 py-1 rounded-xl shadow-sm">FLYHIGH</span>IDIOMAS
+          <span className="bg-yellow-400 text-zinc-900 px-3 py-1 rounded-xl shadow-sm">FLY HIGH</span>IDIOMAS
         </h2>
         <div className="flex items-center gap-6">
           {user && (
@@ -179,15 +179,15 @@ export default function Home() {
           )}
 
           {temPermissao('CONTRATOS_READ') && (
-            <Link href="/views/matriculas" className="group h-full">
+            <Link href="/views/contratos" className="group h-full">
               <div className="bg-zinc-50 p-8 rounded-3xl border border-zinc-200 shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-300 h-full flex flex-col">
                 <div className="flex justify-between items-start mb-8 w-full">
                   <div className="text-4xl bg-white shadow-sm p-4 rounded-2xl border border-zinc-100">📄</div>
                   <span className="text-zinc-300 text-3xl group-hover:text-yellow-500 group-hover:translate-x-2 transition-all flex-shrink-0">&rarr;</span>
                 </div>
                 <div className="flex flex-col flex-grow justify-between">
-                  <h3 className="text-2xl font-black text-zinc-900 mb-3 uppercase tracking-tight">Matrículas</h3>
-                  <p className="text-zinc-500 font-bold mt-2 text-sm leading-relaxed">Vincule alunos às turmas. Tela provisória até a Estória 7 (contratos).</p>
+                  <h3 className="text-2xl font-black text-zinc-900 mb-3 uppercase tracking-tight">Contratos</h3>
+                  <p className="text-zinc-500 font-bold mt-2 text-sm leading-relaxed">Contrato normal e VIP: matrícula na turma, desconto, convênio e parcelas.</p>
                 </div>
               </div>
             </Link>
@@ -235,7 +235,7 @@ export default function Home() {
 
         <footer className="mt-auto pt-20 pb-4 text-center">
           <p className="text-zinc-400 text-xs font-black tracking-widest uppercase">
-            &copy; 2026 FlyHigh Idiomas | Admin Panel v1.0
+            &copy; 2026 Fly High Idiomas | Admin Panel v1.0
           </p>
         </footer>
       </main>

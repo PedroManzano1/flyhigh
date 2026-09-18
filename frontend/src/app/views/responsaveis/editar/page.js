@@ -16,7 +16,8 @@ function EditarResponsavelPageConteudo() {
   const [formData, setFormData] = useState({
     nome: '', dataNascimento: '', rg: '', cpf: '',
     cep: '', logradouro: '', numero: '', complemento: '', bairro: '', cidade: '',
-    telefonePrincipal: '', telefoneSecundario: ''
+    telefonePrincipal: '', telefoneSecundario: '',
+    nomeConjuge: '', telefoneConjuge: ''
   });
 
   useEffect(() => {
@@ -33,6 +34,8 @@ function EditarResponsavelPageConteudo() {
           cpf: resp.cpf || '',
           telefonePrincipal: resp.telefonePrincipal || '',
           telefoneSecundario: resp.telefoneSecundario || '',
+          nomeConjuge: resp.nomeConjuge || '',
+          telefoneConjuge: resp.telefoneConjuge || '',
           cep: resp.endereco?.cep || '',
           logradouro: resp.endereco?.logradouro || '',
           numero: resp.endereco?.numero || '',
@@ -55,6 +58,7 @@ function EditarResponsavelPageConteudo() {
     const payload = {
       nome: formData.nome, dataNascimento: formData.dataNascimento, rg: formData.rg, cpf: formData.cpf,
       telefonePrincipal: formData.telefonePrincipal, telefoneSecundario: formData.telefoneSecundario,
+      nomeConjuge: formData.nomeConjuge || null, telefoneConjuge: formData.telefoneConjuge || null,
       endereco: { cep: formData.cep, logradouro: formData.logradouro, numero: formData.numero, complemento: formData.complemento, bairro: formData.bairro, cidade: formData.cidade }
     };
 
@@ -94,6 +98,14 @@ function EditarResponsavelPageConteudo() {
             <InputField label="CPF" name="cpf" onChange={handleChange} value={formData.cpf} />
           </div>
           <InputField label="RG" name="rg" onChange={handleChange} value={formData.rg} />
+
+          <div className="border-t border-zinc-100 pt-8 space-y-6">
+            <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
+              Cônjuge (opcional — puxado no contrato)
+            </p>
+            <InputField label="Nome do Cônjuge" name="nomeConjuge" placeholder="Ex: John Smith" onChange={handleChange} value={formData.nomeConjuge} />
+            <InputField label="Tel. do Cônjuge" name="telefoneConjuge" placeholder="(00) 00000-0000" onChange={handleChange} value={formData.telefoneConjuge} />
+          </div>
         </div>
 
         <div className="bg-white p-8 rounded-3xl shadow-sm border border-zinc-200 space-y-8">

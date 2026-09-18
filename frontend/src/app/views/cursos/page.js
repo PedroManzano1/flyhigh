@@ -28,7 +28,7 @@ export default function CursosPage() {
       setCursos(res.data);
       setError(null);
     } catch (err) {
-      setError("Erro de conexão com o servidor FlyHigh.");
+      setError("Erro de conexão com o servidor Fly High.");
       console.error(err);
     } finally { setLoading(false); }
   };
@@ -147,7 +147,7 @@ export default function CursosPage() {
               </tr>
             </thead>
             <tbody>
-              {loading && <tr><td colSpan="7" className="p-10 text-center uppercase italic font-black text-zinc-500 animate-pulse">Connecting to FlyHigh Database...</td></tr>}
+              {loading && <tr><td colSpan="7" className="p-10 text-center uppercase italic font-black text-zinc-500 animate-pulse">Connecting to Fly High Database...</td></tr>}
               
               {!loading && !error && cursosFiltrados.map(curso => (
                 <tr key={curso.id_curso} className="border-b border-zinc-100 hover:bg-yellow-50/50 transition-colors">
@@ -201,7 +201,7 @@ export default function CursosPage() {
         </div>
         
         <div className="bg-zinc-50 p-6 border-t border-zinc-200 flex justify-between items-center text-xs font-black uppercase tracking-widest text-zinc-500 rounded-b-[2.5rem]">
-          <span>FlyHigh Idiomas v1.0</span>
+          <span>Fly High Idiomas v1.0</span>
           <span>Total: {cursosFiltrados.length} Níveis</span>
         </div>
       </section>

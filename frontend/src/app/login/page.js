@@ -41,7 +41,7 @@ export default function Login() {
     if (carregando) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center font-black uppercase text-zinc-400 animate-pulse">
-                Iniciando FlyHigh...
+                Iniciando Fly High...
             </div>
         );
     }
@@ -52,7 +52,7 @@ export default function Login() {
                 {/* Logo / Header */}
                 <div className="text-center mb-8">
                     <h2 className="text-3xl font-black text-zinc-900 tracking-tighter inline-block">
-                        <span className="bg-yellow-400 text-zinc-900 px-3 py-1 rounded mr-1">FLYHIGH</span>IDIOMAS
+                        <span className="bg-yellow-400 text-zinc-900 px-3 py-1 rounded mr-1">FLY HIGH</span>IDIOMAS
                     </h2>
                     <p className="text-zinc-500 font-bold uppercase text-xs mt-3 tracking-widest">
                         Painel Administrativo v1.0
@@ -106,7 +106,7 @@ export default function Login() {
 
                 {/* Footer do Login */}
                 <p className="text-center mt-10 text-zinc-400 text-xs font-bold uppercase tracking-tighter">
-                    &copy; 2026 FlyHigh Idiomas | Sistema de Gestão Interna
+                    &copy; 2026 Fly High Idiomas | Sistema de Gestão Interna
                 </p>
             </div>
         </div>

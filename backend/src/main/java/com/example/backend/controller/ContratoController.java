@@ -1,6 +1,8 @@
 package com.example.backend.controller;
 
+import com.example.backend.dto.ContratoFormDTO;
 import com.example.backend.model.Contrato;
+import com.example.backend.model.LancamentoFinanceiro;
 import com.example.backend.service.ContratoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -19,8 +21,8 @@ public class ContratoController {
 
     @PreAuthorize("hasRole('DIRETOR') or hasAuthority('CONTRATOS_WRITE')")
     @PostMapping
-    public Contrato matricular(@RequestBody Contrato contrato) {
-        return service.matricular(contrato);
+    public Contrato matricular(@RequestBody ContratoFormDTO form) {
+        return service.salvar(form);
     }
 
     @PreAuthorize("hasRole('DIRETOR') or hasAuthority('CONTRATOS_READ')")
@@ -37,6 +39,19 @@ public class ContratoController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    // Contrato + parcelas, usado na edição e na impressão
+    @PreAuthorize("hasRole('DIRETOR') or hasAuthority('CONTRATOS_READ')")
+    @GetMapping("/{id}/completo")
+    public ContratoFormDTO getCompleto(@PathVariable Integer id) {
+        return service.buscarCompleto(id);
+    }
+
+    @PreAuthorize("hasRole('DIRETOR') or hasAuthority('CONTRATOS_READ')")
+    @GetMapping("/{id}/parcelas")
+    public List<LancamentoFinanceiro> getParcelas(@PathVariable Integer id) {
+        return service.buscarLancamentosDoContrato(id);
+    }
+
     // Usado pela chamada (Faltas) e pelo lançamento de notas.
     // Liberado também para quem tem acesso ao pedagógico, senão o professor não
     @PreAuthorize("hasRole('DIRETOR') or hasAuthority('CONTRATOS_READ') "
@@ -50,18 +65,33 @@ public class ContratoController {
                 : service.buscarPorTurma(idTurma));
     }
 
+    // Quantas vagas da turma já estão ocupadas por contratos ativos
+    @PreAuthorize("hasRole('DIRETOR') or hasAuthority('CONTRATOS_READ') or hasAuthority('TURMAS_READ')")
+    @GetMapping("/turma/{idTurma}/ocupacao")
+    public long getOcupacao(@PathVariable Long idTurma) {
+        return service.contarVagasOcupadas(idTurma);
+    }
+
     @PreAuthorize("hasRole('DIRETOR') or hasAuthority('CONTRATOS_READ')")
     @GetMapping("/aluno/{idAluno}")
     public ResponseEntity<List<Contrato>> getByAluno(@PathVariable Long idAluno) {
         return ResponseEntity.ok(service.buscarPorAluno(idAluno));
     }
 
+    @PreAuthorize("hasRole('DIRETOR') or hasAuthority('CONTRATOS_READ')")
+    @GetMapping("/aluno/{idAluno}/parcelas")
+    public List<LancamentoFinanceiro> getParcelasDoAluno(@PathVariable Long idAluno) {
+        return service.buscarLancamentosDoAluno(idAluno);
+    }
+
     @PreAuthorize("hasRole('DIRETOR') or hasAuthority('CONTRATOS_WRITE')")
     @PutMapping("/editar/{id}")
-    public ResponseEntity<Contrato> update(@PathVariable Integer id, @RequestBody Contrato contrato) {
+    public ResponseEntity<Contrato> update(@PathVariable Integer id, @RequestBody ContratoFormDTO form) {
         return service.buscarPorId(id).map(existente -> {
-            contrato.setIdContrato(id);
-            return ResponseEntity.ok(service.matricular(contrato));
+            if (form.getContrato() != null) {
+                form.getContrato().setIdContrato(id);
+            }
+            return ResponseEntity.ok(service.salvar(form));
         }).orElse(ResponseEntity.notFound().build());
     }
 

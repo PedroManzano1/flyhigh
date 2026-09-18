@@ -41,7 +41,7 @@ export default function NotasPage() {
         setTurmas(Array.isArray(res.data) ? res.data : []);
         setErro(null);
       } catch (err) {
-        setErro("Erro de conexão com o servidor FlyHigh.");
+        setErro("Erro de conexão com o servidor Fly High.");
       } finally {
         setLoading(false);
       }
@@ -414,7 +414,7 @@ export default function NotasPage() {
         </div>
 
         <div className="bg-zinc-50 p-6 border-t border-zinc-200 flex justify-between items-center text-xs font-black uppercase tracking-widest text-zinc-500 rounded-b-[2.5rem]">
-          <span>FlyHigh Idiomas v1.0</span>
+          <span>Fly High Idiomas v1.0</span>
           <span>Total: {avaliacoes.length} Avaliações</span>
         </div>
       </section>
