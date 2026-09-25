@@ -23,6 +23,12 @@ public interface LancamentoFinanceiroRepository extends JpaRepository<Lancamento
             + "ORDER BY l.dataVencimento ASC")
     List<LancamentoFinanceiro> findByAlunoId(@Param("idAluno") Long idAluno);
 
+    // Tela do financeiro: todas as parcelas com o contrato já carregado, sem N+1
+    @Query("SELECT l FROM LancamentoFinanceiro l JOIN FETCH l.contrato c "
+            + "LEFT JOIN FETCH c.aluno LEFT JOIN FETCH c.responsavel LEFT JOIN FETCH c.turma "
+            + "ORDER BY l.dataVencimento ASC, l.idLancamento ASC")
+    List<LancamentoFinanceiro> findAllComContrato();
+
     @Query("SELECT COUNT(l) FROM LancamentoFinanceiro l WHERE l.contrato.idContrato = :idContrato "
             + "AND UPPER(l.status) = 'PAGA'")
     long contarPagasDoContrato(@Param("idContrato") Integer idContrato);

@@ -15,6 +15,7 @@ const MODULOS = [
   { href: '/views/cursos', rotulo: 'Cursos', icone: '📚', permissao: 'CURSOS_READ' },
   { href: '/views/turmas', rotulo: 'Turmas', icone: '🗓️', permissao: 'TURMAS_READ' },
   { href: '/views/contratos', rotulo: 'Contratos', icone: '📄', permissao: 'CONTRATOS_READ' },
+  { href: '/views/financeiro', rotulo: 'Financeiro', icone: '💰', permissao: 'FINANCEIRO_READ' },
   { href: '/views/faltas', rotulo: 'Faltas', icone: '📋', permissao: 'FREQUENCIAS_READ' },
   { href: '/views/notas', rotulo: 'Notas', icone: '✍️', permissao: 'AVALIACOES_READ' },
   { href: '/views/boletim', rotulo: 'Boletim', icone: '📊', permissao: 'AVALIACOES_READ' },

@@ -328,20 +328,10 @@ public class ContratoService {
         return atualizarAtrasos(lancamentoRepo.findByAlunoId(idAluno));
     }
 
-    /** Parcela vencida e sem baixa aparece como ATRASADA (Estória 8). */
+    /** Parcela vencida e sem baixa aparece como ATRASADA. */
     private List<LancamentoFinanceiro> atualizarAtrasos(List<LancamentoFinanceiro> parcelas) {
         LocalDate hoje = LocalDate.now();
-        for (LancamentoFinanceiro parcela : parcelas) {
-            boolean paga = LancamentoFinanceiro.PAGA.equalsIgnoreCase(parcela.getStatus())
-                    || parcela.getDataPagamento() != null;
-            if (paga) continue;
-
-            if (parcela.getDataVencimento() != null && parcela.getDataVencimento().isBefore(hoje)) {
-                parcela.setStatus(LancamentoFinanceiro.ATRASADA);
-            } else {
-                parcela.setStatus(LancamentoFinanceiro.PENDENTE);
-            }
-        }
+        parcelas.forEach(parcela -> parcela.verificarAtraso(hoje));
         return parcelas;
     }
 

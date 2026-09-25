@@ -8,7 +8,7 @@ import { AuthContext } from '../../../context/authContext';
 
 
 const MODULOS = ["USUARIOS", "ALUNOS", "RESPONSAVEIS", "CURSOS", "TURMAS", "VINCULOS",
-  "PERFIS", "RECADOS", "CONTRATOS", "FREQUENCIAS", "AVALIACOES"];
+  "PERFIS", "RECADOS", "CONTRATOS", "FINANCEIRO", "FREQUENCIAS", "AVALIACOES"];
 
 export default function PerfisPage() {
   const router = useRouter();
@@ -171,4 +171,4 @@ export default function PerfisPage() {
       </section>
     </div>
   );
-}
+}

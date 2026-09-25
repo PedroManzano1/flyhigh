@@ -9,7 +9,7 @@ import { formatarMoeda, formatarData } from '../../../utils/formato';
 import { STATUS_MATRICULA, corDoStatus, TIPO_VIP } from '../../../utils/contrato';
 
 /**
- * Estória 7 — Contratos.
+ * Contratos.
  * É o contrato que matricula o aluno na turma, por isso esta tela substituiu a
  * antiga tela provisória de matrículas.
  */
@@ -29,6 +29,7 @@ export default function ContratosPage() {
 
   const podeEscrever = temPermissao('CONTRATOS_WRITE');
   const podeExcluir = temPermissao('CONTRATOS_DELETE');
+  const podeVerFinanceiro = temPermissao('FINANCEIRO_READ');
 
   const carregar = async () => {
     setLoading(true);
@@ -217,6 +218,13 @@ export default function ContratosPage() {
                         title="Visualizar / imprimir"
                         className="w-12 h-12 flex items-center justify-center bg-white text-zinc-900 border-2 border-zinc-200 hover:bg-zinc-900 hover:text-white rounded-xl transition-all shadow-md text-xl"
                       >🖨</button>
+                      {podeVerFinanceiro && (
+                        <button
+                          onClick={() => router.push(`/views/financeiro?contrato=${c.idContrato}`)}
+                          title="Parcelas e pagamentos"
+                          className="w-12 h-12 flex items-center justify-center bg-white text-zinc-900 border-2 border-zinc-200 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 rounded-xl transition-all shadow-md text-xl"
+                        >💰</button>
+                      )}
                       {podeEscrever && (
                         <button
                           onClick={() => router.push(`/views/contratos/editar?id=${c.idContrato}`)}
@@ -253,7 +261,7 @@ export default function ContratosPage() {
         </div>
 
         <div className="bg-zinc-50 p-6 border-t border-zinc-200 flex justify-between items-center text-xs font-black uppercase tracking-widest text-zinc-500 rounded-b-[2.5rem]">
-          <span>Fly High Idiomas v1.0 · Estória 7</span>
+          <span>Fly High Idiomas v1.0 · Contratos</span>
           <span>Exibindo {contratosFiltrados.length} de {contratos.length}</span>
         </div>
       </section>

@@ -193,6 +193,21 @@ export default function Home() {
             </Link>
           )}
 
+          {temPermissao('FINANCEIRO_READ') && (
+            <Link href="/views/financeiro" className="group h-full">
+              <div className="bg-emerald-500 p-8 rounded-3xl border border-emerald-400 shadow-md hover:shadow-xl hover:-translate-y-2 transition-all duration-300 h-full flex flex-col">
+                <div className="flex justify-between items-start mb-8 w-full">
+                  <div className="text-4xl bg-emerald-400/60 p-4 rounded-2xl">💰</div>
+                  <span className="text-emerald-950 text-3xl group-hover:translate-x-2 transition-transform flex-shrink-0">&rarr;</span>
+                </div>
+                <div className="flex flex-col flex-grow justify-between">
+                  <h3 className="text-2xl font-black text-emerald-950 mb-3 uppercase tracking-tight">Financeiro</h3>
+                  <p className="text-emerald-950 font-bold mt-2 text-sm leading-relaxed">Parcelas em aberto e em atraso, baixa manual de pagamentos e receita do mês.</p>
+                </div>
+              </div>
+            </Link>
+          )}
+
           {temPermissao('FREQUENCIAS_READ') && (
             <Link href="/views/faltas" className="group h-full">
               <div className="bg-white p-8 rounded-3xl border border-zinc-200 shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-300 h-full flex flex-col">
@@ -241,4 +256,4 @@ export default function Home() {
       </main>
     </div>
   );
-}
+}
