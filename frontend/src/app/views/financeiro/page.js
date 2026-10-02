@@ -310,8 +310,11 @@ function FinanceiroConteudo() {
   const podeBaixar = temPermissao('FINANCEIRO_WRITE');
   const podeEstornar = temPermissao('FINANCEIRO_DELETE');
 
-  // Vindo do contrato (?contrato=ID), mostra todas as parcelas daquele contrato
+  // Vindo do contrato (?contrato=ID) ou da inadimplência (?aluno=ID), mostra todas
+  // as parcelas daquele contrato ou aluno
   const idContrato = searchParams.get('contrato');
+  const idAluno = searchParams.get('aluno');
+  const filtroFixo = Boolean(idContrato || idAluno);
 
   const [parcelas, setParcelas] = useState([]);
   const [resumo, setResumo] = useState(null);
@@ -320,7 +323,7 @@ function FinanceiroConteudo() {
 
   const [busca, setBusca] = useState('');
   const [buscaAplicada, setBuscaAplicada] = useState('');
-  const [status, setStatus] = useState(idContrato ? '' : 'EM_ABERTO');
+  const [status, setStatus] = useState(filtroFixo ? '' : 'EM_ABERTO');
   const [tipo, setTipo] = useState('');
   const [vencimentoDe, setVencimentoDe] = useState('');
   const [vencimentoAte, setVencimentoAte] = useState('');
@@ -343,6 +346,7 @@ function FinanceiroConteudo() {
       if (status) params.status = status;
       if (tipo) params.tipo = tipo;
       if (idContrato) params.idContrato = idContrato;
+      if (idAluno) params.idAluno = idAluno;
       if (vencimentoDe) params.vencimentoDe = vencimentoDe;
       if (vencimentoAte) params.vencimentoAte = vencimentoAte;
 
@@ -354,7 +358,7 @@ function FinanceiroConteudo() {
     } finally {
       setLoading(false);
     }
-  }, [buscaAplicada, status, tipo, idContrato, vencimentoDe, vencimentoAte]);
+  }, [buscaAplicada, status, tipo, idContrato, idAluno, vencimentoDe, vencimentoAte]);
 
   const carregarResumo = useCallback(async () => {
     try {
@@ -378,7 +382,7 @@ function FinanceiroConteudo() {
     [parcelas]
   );
 
-  const contratoFiltrado = idContrato && parcelas.length > 0 ? parcelas[0] : null;
+  const primeiraParcela = filtroFixo && parcelas.length > 0 ? parcelas[0] : null;
 
   const limparFiltros = () => {
     setBusca('');
@@ -462,12 +466,12 @@ function FinanceiroConteudo() {
         titulo="Financeiro"
         descricao="Parcelas de mensalidade e material geradas pelos contratos. A baixa é manual: registre a data em que o dinheiro ou o PIX entrou."
       >
-        {idContrato && (
+        {filtroFixo && (
           <button
-            onClick={() => router.push('/views/contratos')}
+            onClick={() => router.push(idAluno ? '/views/inadimplencia' : '/views/contratos')}
             className="px-8 py-4 bg-white text-zinc-900 border-2 border-zinc-200 rounded-2xl font-black text-sm uppercase tracking-[0.2em] hover:bg-zinc-900 hover:text-white transition-all shadow-md"
           >
-            ← Contratos
+            ← {idAluno ? 'Inadimplência' : 'Contratos'}
           </button>
         )}
         <button
@@ -509,10 +513,12 @@ function FinanceiroConteudo() {
           <div className="flex justify-between items-center flex-wrap gap-4">
             <h2 className="font-black text-lg uppercase text-zinc-800 tracking-tighter">Database: Parcelas</h2>
 
-            {idContrato && (
+            {filtroFixo && (
               <div className="flex items-center gap-3 bg-yellow-400 text-zinc-900 px-4 py-2 rounded-xl font-black text-xs uppercase tracking-widest">
-                Contrato {contratoFiltrado?.numeroContrato || `#${idContrato}`}
-                {contratoFiltrado?.alunoNome && <span className="opacity-70">· {contratoFiltrado.alunoNome}</span>}
+                {idContrato
+                  ? <>Contrato {primeiraParcela?.numeroContrato || `#${idContrato}`}</>
+                  : <>Aluno {primeiraParcela?.alunoMatricula ? `#${primeiraParcela.alunoMatricula}` : `#${idAluno}`}</>}
+                {primeiraParcela?.alunoNome && <span className="opacity-70">· {primeiraParcela.alunoNome}</span>}
                 <button
                   onClick={() => router.push('/views/financeiro')}
                   title="Ver todas as parcelas"

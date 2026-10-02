@@ -239,7 +239,7 @@ public class FinanceiroService {
         }
     }
 
-    private boolean statusConfere(String status, String filtro) {
+    static boolean statusConfere(String status, String filtro) {
         if (filtro == null) return true;
         if (EM_ABERTO.equals(filtro)) return !LancamentoFinanceiro.PAGA.equals(status);
         return filtro.equals(status);
@@ -268,7 +268,7 @@ public class FinanceiroService {
     }
 
     // Sem acento e em minúsculas, para "joao" achar "João"
-    private String normalizar(String texto) {
+    static String normalizar(String texto) {
         if (texto == null) return "";
         return Normalizer.normalize(texto, Normalizer.Form.NFD)
                 .replaceAll("\\p{M}", "")

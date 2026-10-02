@@ -208,6 +208,21 @@ export default function Home() {
             </Link>
           )}
 
+          {temPermissao('FINANCEIRO_READ') && (
+            <Link href="/views/inadimplencia" className="group h-full">
+              <div className="bg-red-600 p-8 rounded-3xl border border-red-500 shadow-md hover:shadow-xl hover:-translate-y-2 transition-all duration-300 h-full flex flex-col">
+                <div className="flex justify-between items-start mb-8 w-full">
+                  <div className="text-4xl bg-red-500/70 p-4 rounded-2xl">🚨</div>
+                  <span className="text-white text-3xl group-hover:translate-x-2 transition-transform flex-shrink-0">&rarr;</span>
+                </div>
+                <div className="flex flex-col flex-grow justify-between">
+                  <h3 className="text-2xl font-black text-white mb-3 uppercase tracking-tight">Inadimplência</h3>
+                  <p className="text-red-50 font-bold mt-2 text-sm leading-relaxed">Consulte por nome ou matrícula quem está em atraso e quem é o responsável financeiro.</p>
+                </div>
+              </div>
+            </Link>
+          )}
+
           {temPermissao('FREQUENCIAS_READ') && (
             <Link href="/views/faltas" className="group h-full">
               <div className="bg-white p-8 rounded-3xl border border-zinc-200 shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-300 h-full flex flex-col">

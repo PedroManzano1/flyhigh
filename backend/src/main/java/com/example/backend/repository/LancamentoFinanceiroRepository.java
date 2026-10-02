@@ -29,6 +29,19 @@ public interface LancamentoFinanceiroRepository extends JpaRepository<Lancamento
             + "ORDER BY l.dataVencimento ASC, l.idLancamento ASC")
     List<LancamentoFinanceiro> findAllComContrato();
 
+    /**
+     * Consulta de inadimplência: cada parcela junto com o(s) responsável(is) marcado(s)
+     * como financeiro no vínculo do aluno. Devolve [parcela, responsável, grau de parentesco];
+     * responsável e grau vêm nulos quando o aluno não tem ninguém marcado, e a parcela se
+     * repete quando há mais de um marcado.
+     */
+    @Query("SELECT l, r, v.grauParentesco FROM LancamentoFinanceiro l "
+            + "JOIN FETCH l.contrato c JOIN FETCH c.aluno a LEFT JOIN FETCH c.turma "
+            + "LEFT JOIN VinculoAlunoResponsavel v ON v.aluno = a AND v.isResponsavelFinanceiro = true "
+            + "LEFT JOIN v.responsavel r "
+            + "ORDER BY l.dataVencimento ASC, l.idLancamento ASC")
+    List<Object[]> findParcelasComResponsavelFinanceiro();
+
     @Query("SELECT COUNT(l) FROM LancamentoFinanceiro l WHERE l.contrato.idContrato = :idContrato "
             + "AND UPPER(l.status) = 'PAGA'")
     long contarPagasDoContrato(@Param("idContrato") Integer idContrato);

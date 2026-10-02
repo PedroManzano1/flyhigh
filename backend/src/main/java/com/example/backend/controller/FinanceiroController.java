@@ -4,7 +4,9 @@ import com.example.backend.dto.AjusteParcelaDTO;
 import com.example.backend.dto.BaixaParcelaDTO;
 import com.example.backend.dto.ParcelaFinanceiraDTO;
 import com.example.backend.dto.ResumoFinanceiroDTO;
+import com.example.backend.dto.SituacaoFinanceiraAlunoDTO;
 import com.example.backend.service.FinanceiroService;
+import com.example.backend.service.InadimplenciaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -26,6 +28,9 @@ public class FinanceiroController {
     @Autowired
     private FinanceiroService service;
 
+    @Autowired
+    private InadimplenciaService inadimplenciaService;
+
     @PreAuthorize("hasRole('DIRETOR') or hasAuthority('FINANCEIRO_READ')")
     @GetMapping("/parcelas")
     public List<ParcelaFinanceiraDTO> listar(
@@ -37,6 +42,16 @@ public class FinanceiroController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate vencimentoDe,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate vencimentoAte) {
         return service.listar(busca, status, tipo, idContrato, idAluno, vencimentoDe, vencimentoAte);
+    }
+
+    // Consulta de inadimplência: somente leitura, agrupada por aluno
+    @PreAuthorize("hasRole('DIRETOR') or hasAuthority('FINANCEIRO_READ')")
+    @GetMapping("/inadimplencia")
+    public List<SituacaoFinanceiraAlunoDTO> inadimplencia(
+            @RequestParam(required = false) String nome,
+            @RequestParam(required = false) String matricula,
+            @RequestParam(required = false) String status) {
+        return inadimplenciaService.consultar(nome, matricula, status);
     }
 
     @PreAuthorize("hasRole('DIRETOR') or hasAuthority('FINANCEIRO_READ')")

@@ -16,6 +16,7 @@ const MODULOS = [
   { href: '/views/turmas', rotulo: 'Turmas', icone: '🗓️', permissao: 'TURMAS_READ' },
   { href: '/views/contratos', rotulo: 'Contratos', icone: '📄', permissao: 'CONTRATOS_READ' },
   { href: '/views/financeiro', rotulo: 'Financeiro', icone: '💰', permissao: 'FINANCEIRO_READ' },
+  { href: '/views/inadimplencia', rotulo: 'Inadimplência', icone: '🚨', permissao: 'FINANCEIRO_READ' },
   { href: '/views/faltas', rotulo: 'Faltas', icone: '📋', permissao: 'FREQUENCIAS_READ' },
   { href: '/views/notas', rotulo: 'Notas', icone: '✍️', permissao: 'AVALIACOES_READ' },
   { href: '/views/boletim', rotulo: 'Boletim', icone: '📊', permissao: 'AVALIACOES_READ' },
@@ -49,10 +50,11 @@ export default function AppShell({ children }) {
 
   const modulosLiberados = MODULOS.filter(m => temPermissao(m.permissao));
 
+  // print:hidden na navegação para relatórios impressos saírem só com o conteúdo
   return (
     <div className="min-h-screen bg-gray-50 font-sans text-zinc-900 flex flex-col">
 
-      <nav className="bg-zinc-900 px-6 md:px-10 py-5 flex justify-between items-center shadow-md border-b-4 border-zinc-950 gap-4">
+      <nav className="print:hidden bg-zinc-900 px-6 md:px-10 py-5 flex justify-between items-center shadow-md border-b-4 border-zinc-950 gap-4">
         <Link href="/" className="shrink-0">
           <h2 className="text-xl md:text-2xl font-black text-white flex items-center gap-2 tracking-tighter">
             <span className="bg-yellow-400 text-zinc-900 px-3 py-1 rounded-xl shadow-sm">FLY HIGH</span>
@@ -74,7 +76,7 @@ export default function AppShell({ children }) {
       </nav>
 
       {modulosLiberados.length > 0 && (
-        <div className="bg-white border-b border-zinc-200 shadow-sm">
+        <div className="print:hidden bg-white border-b border-zinc-200 shadow-sm">
           <div className="px-6 md:px-10 py-3 flex gap-2 overflow-x-auto">
             <Link
               href="/"
@@ -109,7 +111,7 @@ export default function AppShell({ children }) {
         {children}
       </main>
 
-      <footer className="px-10 py-6 text-center border-t border-zinc-200 bg-white">
+      <footer className="print:hidden px-10 py-6 text-center border-t border-zinc-200 bg-white">
         <p className="text-zinc-400 text-xs font-black tracking-widest uppercase">
           &copy; 2026 Fly High Idiomas | Admin Panel v1.0
         </p>
