@@ -3,7 +3,7 @@ import { Suspense, useState, useEffect, useContext, useMemo } from 'react';
 import { useFeedback } from '../../../../components/feedback';
 import { InputField } from '../../../../components/ui';
 import api, { mensagemErro } from '../../../../utils/api';
-import { formatarNumero, formatarPeso } from '../../../../utils/formato';
+import { formatarNumero } from '../../../../utils/formato';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AuthContext } from '../../../../context/authContext';
 
@@ -23,16 +23,15 @@ function LancamentoConteudo() {
   const [matriculas, setMatriculas] = useState([]);
   // { [idAluno]: "8.5" }  — string para permitir campo vazio
   const [lancamentos, setLancamentos] = useState({});
-  const [formAvaliacao, setFormAvaliacao] = useState({ titulo: '', data: '', notaMaxima: '', peso: '' });
+  const [formAvaliacao, setFormAvaliacao] = useState({ titulo: '', data: '', notaMaxima: '' });
 
   const podeLancar = temPermissao('AVALIACOES_WRITE');
   const notaMaximaAtual = parseFloat(formAvaliacao.notaMaxima) || 0;
-  const pesoAtual = parseFloat(formAvaliacao.peso) || 0;
 
-  // Nota calculada = nota convertida para base 10 multiplicada pelo peso%
-  const calcularContribuicao = (valor) => {
+  // Quanto da atividade o aluno acertou, só para conferência
+  const percentualDaAtividade = (valor) => {
     if (valor === null || isNaN(valor) || notaMaximaAtual <= 0) return null;
-    return (valor / notaMaximaAtual) * 10 * (pesoAtual / 100);
+    return (valor / notaMaximaAtual) * 100;
   };
 
   useEffect(() => {
@@ -49,8 +48,7 @@ function LancamentoConteudo() {
         setFormAvaliacao({
           titulo: carregada.titulo || '',
           data: carregada.data || '',
-          notaMaxima: carregada.notaMaxima != null ? String(carregada.notaMaxima) : '',
-          peso: carregada.peso != null ? String(carregada.peso) : ''
+          notaMaxima: carregada.notaMaxima != null ? String(carregada.notaMaxima) : ''
         });
 
         const idTurma = carregada.turma?.id_turma;
@@ -114,12 +112,8 @@ function LancamentoConteudo() {
     e.preventDefault();
     if (!podeLancar) return;
 
-    if (!formAvaliacao.titulo.trim()) return notificar("Informe o título da avaliação.", 'alerta');
-    if (!formAvaliacao.data) return notificar("Informe a data da avaliação.", 'alerta');
-    if (!notaMaximaAtual || notaMaximaAtual <= 0) return notificar("A nota máxima deve ser maior que zero.", 'alerta');
-
-    const peso = parseFloat(formAvaliacao.peso);
-    if (!peso || peso <= 0 || peso > 100) return notificar("O peso deve ser um percentual entre 0 e 100.", 'alerta');
+    if (!formAvaliacao.titulo.trim()) return notificar("Informe o nome da atividade.", 'alerta');
+    if (!notaMaximaAtual || notaMaximaAtual <= 0) return notificar("Informe quantos pontos a atividade vale.", 'alerta');
 
     if (notasInvalidas.length > 0) {
       return notificar(`Existem ${notasInvalidas.length} nota(s) fora do intervalo permitido (0 a ${notaMaximaAtual}).`, 'alerta');
@@ -132,9 +126,10 @@ function LancamentoConteudo() {
     try {
       await api.put(`/api/avaliacoes/editar/${id}`, {
         titulo: formAvaliacao.titulo.trim(),
-        data: formAvaliacao.data,
+        data: formAvaliacao.data || null,
         notaMaxima: notaMaximaAtual,
-        peso,
+        categoria: avaliacao.categoria || null,
+        etapa: avaliacao.etapa || null,
         turma: { id_turma: avaliacao.turma?.id_turma }
       });
 
@@ -170,13 +165,14 @@ function LancamentoConteudo() {
     <div className="p-10 bg-gray-50 min-h-screen text-zinc-900 font-sans">
       <header className="mb-10 flex flex-col gap-4">
         <button onClick={() => router.push('/views/notas')} className="flex items-center gap-2 text-zinc-600 hover:text-zinc-900 transition-colors font-black text-sm uppercase tracking-widest w-fit">
-          <span className="text-xl">←</span> Voltar para as avaliações
+          <span className="text-xl">←</span> Voltar para as atividades
         </button>
         <div>
           <h1 className="text-5xl font-black uppercase tracking-tighter italic text-zinc-900">Lançar Notas</h1>
           <div className="h-2 w-24 bg-yellow-400 mt-2 rounded-full"></div>
           <p className="text-zinc-500 font-bold mt-3">
-            {avaliacao?.turma?.codigoTurma || 'Turma'} · {avaliacao?.turma?.curso?.nome || 'Sem curso'} · {avaliacao?.titulo} de {formatarData(avaliacao?.data)}
+            {avaliacao?.turma?.codigoTurma || 'Turma'} · {avaliacao?.turma?.curso?.nome || 'Sem curso'} · {avaliacao?.titulo}
+            {avaliacao?.data ? ` de ${formatarData(avaliacao.data)}` : ''}
           </p>
         </div>
       </header>
@@ -184,14 +180,13 @@ function LancamentoConteudo() {
       <form onSubmit={handleSalvarTudo} className="grid grid-cols-1 xl:grid-cols-3 gap-8 mb-12">
 
         <div className="bg-white p-8 rounded-3xl shadow-sm border border-zinc-200 space-y-8 h-fit">
-          <h2 className="font-black text-lg uppercase text-yellow-600 tracking-widest border-b border-zinc-100 pb-4">01. Dados da Avaliação</h2>
+          <h2 className="font-black text-lg uppercase text-yellow-600 tracking-widest border-b border-zinc-100 pb-4">01. Dados da Atividade</h2>
 
-          <InputField label="Título" name="titulo" onChange={handleAvaliacaoChange} value={formAvaliacao.titulo} disabled={!podeLancar} />
-          <InputField label="Data" name="data" type="date" onChange={handleAvaliacaoChange} value={formAvaliacao.data} disabled={!podeLancar} />
+          <InputField label="Nome" name="titulo" onChange={handleAvaliacaoChange} value={formAvaliacao.titulo} disabled={!podeLancar} />
 
           <div className="grid grid-cols-2 gap-6">
-            <InputField label="Nota Máxima" name="notaMaxima" type="number" step="0.1" min="0.1" onChange={handleAvaliacaoChange} value={formAvaliacao.notaMaxima} disabled={!podeLancar} />
-            <InputField label="Peso (0-100)%" name="peso" type="number" step="0.1" min="0.1" max="100" onChange={handleAvaliacaoChange} value={formAvaliacao.peso} disabled={!podeLancar} />
+            <InputField label="Vale (pontos)" name="notaMaxima" type="number" step="0.5" min="0.5" onChange={handleAvaliacaoChange} value={formAvaliacao.notaMaxima} disabled={!podeLancar} />
+            <InputField label="Data (opcional)" name="data" type="date" onChange={handleAvaliacaoChange} value={formAvaliacao.data} disabled={!podeLancar} />
           </div>
 
           <div className="bg-zinc-50 border border-zinc-200 rounded-2xl p-6">
@@ -213,10 +208,10 @@ function LancamentoConteudo() {
           </div>
 
           <div className="bg-zinc-900 text-white rounded-2xl p-6">
-            <div className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-2">Peso desta avaliação</div>
-            <div className="text-4xl font-black">{formatarPeso(pesoAtual)}</div>
+            <div className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-2">Valor desta atividade</div>
+            <div className="text-4xl font-black">{formatarNumero(notaMaximaAtual, 0)} pts</div>
             <p className="text-zinc-400 font-bold text-xs mt-3 leading-relaxed">
-              Cada nota lançada entra na nota final do aluno multiplicada por este peso.
+              Os pontos entram na soma do aluno. No fim a soma é dividida por 4 (Modelo 400) ou 5 (Modelo 500).
             </p>
           </div>
 
@@ -256,9 +251,8 @@ function LancamentoConteudo() {
                 <thead className="bg-zinc-50 border-b border-zinc-200">
                   <tr>
                     <th className="p-4 font-black uppercase text-xs tracking-widest text-zinc-600">Aluno</th>
-                    <th className="p-4 font-black uppercase text-xs tracking-widest text-center text-zinc-600 w-48">Nota Ativ. (0 a {notaMaximaAtual || '?'})</th>
-                    <th className="p-4 font-black uppercase text-xs tracking-widest text-center text-zinc-600 w-32">Peso</th>
-                    <th className="p-4 font-black uppercase text-xs tracking-widest text-center text-zinc-600 w-40">Nota Calc.</th>
+                    <th className="p-4 font-black uppercase text-xs tracking-widest text-center text-zinc-600 w-48">Pontos (0 a {notaMaximaAtual || '?'})</th>
+                    <th className="p-4 font-black uppercase text-xs tracking-widest text-center text-zinc-600 w-40">% da atividade</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -268,7 +262,7 @@ function LancamentoConteudo() {
                     const bruto = lancamentos[aluno.id_aluno] ?? '';
                     const valor = bruto === '' ? null : parseFloat(bruto);
                     const invalida = valor !== null && (isNaN(valor) || valor < 0 || (notaMaximaAtual > 0 && valor > notaMaximaAtual));
-                    const calculada = calcularContribuicao(valor);
+                    const percentual = percentualDaAtividade(valor);
 
                     return (
                       <tr key={aluno.id_aluno} className={`border-b border-zinc-100 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} hover:bg-yellow-50/50 transition-colors`}>
@@ -292,14 +286,11 @@ function LancamentoConteudo() {
                           />
                         </td>
                         <td className="p-4 text-center">
-                          <span className="font-mono font-bold text-sm text-zinc-500">{formatarPeso(pesoAtual)}</span>
-                        </td>
-                        <td className="p-4 text-center">
-                          {calculada === null ? (
+                          {percentual === null ? (
                             <span className="text-zinc-300 font-mono font-black">---</span>
                           ) : (
                             <span className="font-mono font-black text-lg text-zinc-900">
-                              {formatarNumero(calculada, 2)}
+                              {formatarNumero(percentual, 0)}%
                             </span>
                           )}
                         </td>
@@ -313,7 +304,7 @@ function LancamentoConteudo() {
 
           <div className="flex items-center justify-between flex-wrap gap-4 mt-6">
             <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 max-w-sm leading-relaxed">
-              Nota Calc. = nota do aluno x peso da avaliação. Campo em branco significa sem lançamento,
+              Campo em branco significa sem lançamento,
               e apagar uma nota já gravada remove o lançamento.
             </p>
 

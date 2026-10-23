@@ -33,6 +33,10 @@ public class Turma {
 
     private String status;
 
+    // Pontuação máxima da turma: 400 (nota final = soma ÷ 4) ou 500 (soma ÷ 5)
+    @Column(name = "pontuacao_total")
+    private Integer pontuacaoTotal;
+
     @ManyToOne
     @JoinColumn(name = "id_curso")
     private Curso curso;
@@ -40,4 +44,4 @@ public class Turma {
     @ManyToOne
     @JoinColumn(name = "id_professor")
     private Usuario professor;
-}
+}

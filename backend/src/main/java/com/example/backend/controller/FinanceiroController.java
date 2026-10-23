@@ -18,7 +18,8 @@ import java.util.List;
 
 /**
  * Diretor tem acesso total. O secretário recebe FINANCEIRO_READ e FINANCEIRO_WRITE
- * (consultar e dar baixa); estorno e exclusão ficam no FINANCEIRO_DELETE.
+ * (consultar e dar baixa); estorno e exclusão ficam no FINANCEIRO_DELETE. A consulta
+ * de inadimplência tem módulo próprio (INADIMPLENCIA_READ).
  */
 @RestController
 @RequestMapping("/api/financeiro")
@@ -45,7 +46,7 @@ public class FinanceiroController {
     }
 
     // Consulta de inadimplência: somente leitura, agrupada por aluno
-    @PreAuthorize("hasRole('DIRETOR') or hasAuthority('FINANCEIRO_READ')")
+    @PreAuthorize("hasRole('DIRETOR') or hasAuthority('INADIMPLENCIA_READ')")
     @GetMapping("/inadimplencia")
     public List<SituacaoFinanceiraAlunoDTO> inadimplencia(
             @RequestParam(required = false) String nome,

@@ -6,7 +6,7 @@ import { AuthContext } from '../context/authContext';
 
 export default function Home() {
   const router = useRouter();
-  const { user, signOut, temPermissao } = useContext(AuthContext); 
+  const { user, signOut, temPermissao, ehAluno } = useContext(AuthContext); 
   const [carregando, setCarregando] = useState(true);
 
   useEffect(() => {
@@ -18,8 +18,13 @@ export default function Home() {
     }
   }, [router]);
 
+  // Conta de aluno não usa o painel da escola: vai para a área dele
+  useEffect(() => {
+    if (ehAluno) router.replace('/minha-area');
+  }, [ehAluno, router]);
 
-  if (carregando) {
+
+  if (carregando || ehAluno) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center font-black uppercase text-zinc-400 animate-pulse text-xl tracking-widest">
         Carregando Fly High...
@@ -163,7 +168,7 @@ export default function Home() {
             </Link>
           )}
 
-          {temPermissao('AVALIACOES_READ') && (
+          {temPermissao('BOLETIM_READ') && (
             <Link href="/views/boletim" className="group h-full">
               <div className="bg-sky-400 p-8 rounded-3xl border border-sky-300 shadow-md hover:shadow-xl hover:-translate-y-2 transition-all duration-300 h-full flex flex-col">
                 <div className="flex justify-between items-start mb-8 w-full">
@@ -208,7 +213,7 @@ export default function Home() {
             </Link>
           )}
 
-          {temPermissao('FINANCEIRO_READ') && (
+          {temPermissao('INADIMPLENCIA_READ') && (
             <Link href="/views/inadimplencia" className="group h-full">
               <div className="bg-red-600 p-8 rounded-3xl border border-red-500 shadow-md hover:shadow-xl hover:-translate-y-2 transition-all duration-300 h-full flex flex-col">
                 <div className="flex justify-between items-start mb-8 w-full">

@@ -1,8 +1,9 @@
 "use client";
 import { useState, useContext, useEffect } from 'react';
+import Link from 'next/link';
 import { useFeedback } from '../../components/feedback';
 import { AuthContext } from '../../context/authContext';
-import api from '../../utils/api';
+import api, { mensagemErro } from '../../utils/api';
 
 export default function Login() {
   const { notificar } = useFeedback();
@@ -34,7 +35,10 @@ export default function Login() {
                 await signIn(login, senha);
             }
         } catch (error) {
-            notificar("Ocorreu um erro. Verifique suas credenciais.", 'alerta');
+            // signIn já devolve a mensagem pronta; o cadastro do diretor vem como erro do axios
+            notificar(isPrimeiroAcesso
+                ? mensagemErro(error, "Não foi possível criar o diretor.")
+                : (error?.message || "Login ou senha incorretos."), 'alerta');
         }
     };
 
@@ -55,7 +59,7 @@ export default function Login() {
                         <span className="bg-yellow-400 text-zinc-900 px-3 py-1 rounded mr-1">FLY HIGH</span>IDIOMAS
                     </h2>
                     <p className="text-zinc-500 font-bold uppercase text-xs mt-3 tracking-widest">
-                        Painel Administrativo v1.0
+                        Sistema da escola v1.0
                     </p>
                 </div>
 
@@ -102,6 +106,15 @@ export default function Login() {
                             <span className="group-hover:translate-x-1 transition-transform">→</span>
                         </button>
                     </form>
+
+                    {!isPrimeiroAcesso && (
+                        <div className="mt-8 pt-6 border-t-2 border-dashed border-zinc-200 text-center">
+                            <p className="text-sm font-bold text-zinc-500">É aluno e ainda não tem acesso?</p>
+                            <Link href="/cadastro" className="inline-block mt-2 font-black uppercase text-sm tracking-widest text-zinc-900 underline decoration-yellow-400 decoration-4 underline-offset-4 hover:text-yellow-600">
+                                Criar minha conta
+                            </Link>
+                        </div>
+                    )}
                 </div>
 
                 {/* Footer do Login */}
@@ -111,4 +124,4 @@ export default function Login() {
             </div>
         </div>
     );
-}
+}

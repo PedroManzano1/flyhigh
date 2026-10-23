@@ -2,7 +2,8 @@
 import { useState, useEffect, useContext, useMemo } from 'react';
 import { SelectField } from '../../../components/ui';
 import api, { mensagemErro } from '../../../utils/api';
-import { formatarNumero, formatarPeso, formatarNotaFinal } from '../../../utils/formato';
+import { formatarNumero } from '../../../utils/formato';
+import { rotuloModelo } from '../../../utils/notas';
 import { useRouter } from 'next/navigation';
 import { AuthContext } from '../../../context/authContext';
 
@@ -75,8 +76,11 @@ export default function BoletimPage() {
 
   const avaliacoes = boletim?.avaliacoes || [];
   const alunos = boletim?.alunos || [];
-  const pesoTotal = boletim?.pesoTotal ?? 0;
-  const pesosFecham = Math.abs(pesoTotal - 100) < 0.01;
+  const pontuacaoTotal = boletim?.pontuacaoTotal ?? 0;
+  const pontosCadastrados = boletim?.pontosCadastrados ?? 0;
+  const pontosFecham = Math.abs(pontosCadastrados - pontuacaoTotal) < 0.01;
+  const notaMinima = boletim?.notaMinima ?? 70;
+  const pontos = (v) => formatarNumero(v, Number(v) % 1 === 0 ? 0 : 1);
 
   const alunosFiltrados = alunos.filter(a =>
     a.nome?.toLowerCase().includes(busca.toLowerCase()) ||
@@ -97,7 +101,7 @@ export default function BoletimPage() {
         <div>
           <h1 className="text-5xl font-black uppercase tracking-tighter italic text-zinc-900">Boletim da Turma</h1>
           <div className="h-2 w-24 bg-yellow-400 rounded-full mt-2"></div>
-          <p className="text-zinc-500 font-bold mt-3">Notas, peso, nota calculada, frequência e situação de cada aluno.</p>
+          <p className="text-zinc-500 font-bold mt-3">Pontos de cada atividade, nota final (soma ÷ 4 ou ÷ 5), frequência e situação de cada aluno.</p>
         </div>
         <div className="flex flex-wrap gap-4">
           {boletim && (
@@ -120,11 +124,19 @@ export default function BoletimPage() {
         </div>
       )}
 
-      {boletim && avaliacoes.length > 0 && !pesosFecham && (
+      {boletim && !boletim.modeloDefinido && avaliacoes.length > 0 && (
         <div className="mb-8 bg-amber-50 border border-amber-200 text-amber-800 rounded-3xl p-6 font-bold text-sm leading-relaxed">
-          <span className="font-black uppercase tracking-widest text-xs block mb-1">⚠ Pesos incompletos</span>
-          Os pesos das avaliações desta turma somam {formatarPeso(pesoTotal)} em vez de 100%.
-          Enquanto isso, a nota final mostrada não chega ao valor cheio. Ajuste os pesos em Notas &amp; Avaliações.
+          <span className="font-black uppercase tracking-widest text-xs block mb-1">⚠ Turma sem modelo de avaliação</span>
+          Defina o Modelo 400 ou 500 na tela de Turmas. Enquanto isso, a nota final usa a soma das atividades
+          cadastradas ({pontos(pontosCadastrados)} pontos) como total.
+        </div>
+      )}
+
+      {boletim && boletim.modeloDefinido && avaliacoes.length > 0 && !pontosFecham && (
+        <div className="mb-8 bg-amber-50 border border-amber-200 text-amber-800 rounded-3xl p-6 font-bold text-sm leading-relaxed">
+          <span className="font-black uppercase tracking-widest text-xs block mb-1">⚠ Atividades incompletas</span>
+          As atividades desta turma somam {pontos(pontosCadastrados)} de {pontos(pontuacaoTotal)} pontos.
+          Ninguém é dado como aprovado até o modelo fechar. Complete as atividades em Notas &amp; Avaliações.
         </div>
       )}
 
@@ -161,6 +173,7 @@ export default function BoletimPage() {
               <div className="font-bold text-sm text-zinc-700 uppercase">{boletim.curso || 'Sem curso'}</div>
               <div className="font-bold text-sm text-zinc-600">Prof.: {boletim.professor || 'A definir'}</div>
               <div className="font-bold text-sm text-zinc-600 font-mono">Semestre: {boletim.semestreAno || '---'}</div>
+              <div className="font-black text-[10px] uppercase tracking-widest text-zinc-500 pt-1">{rotuloModelo(boletim.modeloDefinido ? boletim.pontuacaoTotal : null)}</div>
             </div>
           )}
         </div>
@@ -172,8 +185,8 @@ export default function BoletimPage() {
             <>
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-zinc-50 border border-zinc-200 rounded-2xl p-5 text-center">
-                  <div className="text-3xl font-black text-zinc-900">{boletim.mediaMinima?.toFixed(1)}</div>
-                  <div className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mt-1">Média mínima</div>
+                  <div className="text-3xl font-black text-zinc-900">{formatarNumero(notaMinima, 0)}</div>
+                  <div className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mt-1">Nota mínima (de 100)</div>
                 </div>
                 <div className="bg-zinc-50 border border-zinc-200 rounded-2xl p-5 text-center">
                   <div className="text-3xl font-black text-zinc-900">{boletim.frequenciaMinima?.toFixed(0)}%</div>
@@ -186,10 +199,10 @@ export default function BoletimPage() {
                   <div className="text-2xl font-black">{boletim.totalAulas}</div>
                   <div className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mt-1">Aulas</div>
                 </div>
-                <div className={`border rounded-2xl p-4 text-center ${pesosFecham ? 'bg-zinc-50 border-zinc-200' : 'bg-amber-50 border-amber-200'}`}>
+                <div className={`border rounded-2xl p-4 text-center ${pontosFecham ? 'bg-zinc-50 border-zinc-200' : 'bg-amber-50 border-amber-200'}`}>
                   <div className="text-2xl font-black">{boletim.totalAvaliacoes}</div>
                   <div className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mt-1">
-                    Aval. ({formatarPeso(pesoTotal)})
+                    Ativ. ({pontos(pontosCadastrados)}/{pontos(pontuacaoTotal)})
                   </div>
                 </div>
                 <div className="bg-zinc-50 border border-zinc-200 rounded-2xl p-4 text-center">
@@ -199,9 +212,9 @@ export default function BoletimPage() {
               </div>
 
               <p className="text-xs font-bold text-zinc-500 leading-relaxed">
-                A nota final é a soma das notas calculadas (nota x peso%). A ERS não fixou a nota mínima
-                nem a frequência mínima; os dois valores ficam no application.properties
-                (flyhigh.pedagogico.media-minima e flyhigh.pedagogico.frequencia-minima).
+                A nota final é a soma dos pontos do aluno ÷ {formatarNumero(boletim.divisor, boletim.divisor % 1 === 0 ? 0 : 2)}
+                ({pontos(pontuacaoTotal)} pontos viram uma nota de 0 a 100). Os dois mínimos ficam no application.properties
+                (flyhigh.pedagogico.nota-minima e flyhigh.pedagogico.frequencia-minima).
               </p>
             </>
           ) : (
@@ -213,7 +226,8 @@ export default function BoletimPage() {
           <div>
             <h2 className="font-black text-2xl uppercase mb-4 italic">Panorama Final</h2>
             <p className="font-bold text-zinc-400 text-sm leading-relaxed">
-              A reprovação por frequência é imediata. A reprovação por nota só é considerada depois que todas as avaliações da turma forem lançadas.
+              A reprovação por frequência é imediata. Por nota, o aluno é reprovado quando fecha abaixo de {formatarNumero(notaMinima, 0)}
+              ou quando, mesmo tirando o máximo no que falta, já não consegue chegar lá.
             </p>
           </div>
 
@@ -249,8 +263,9 @@ export default function BoletimPage() {
                 <th className="p-6 font-black uppercase text-xs tracking-widest text-zinc-600 sticky left-0 bg-zinc-50">Aluno</th>
                 {avaliacoes.map(a => (
                   <th key={a.idAvaliacao} className="p-4 font-black uppercase text-[10px] tracking-widest text-zinc-800 text-center">
-                    <div className="leading-tight">{a.titulo}</div>
-                    <div className="text-zinc-400 font-mono mt-1 normal-case">máx {formatarNumero(a.notaMaxima, 1)} · peso {formatarPeso(a.peso)}</div>
+                    {a.categoria && <div className="text-zinc-500 leading-tight">{a.categoria}</div>}
+                    <div className="leading-tight text-xs">{a.etapa || a.titulo}</div>
+                    <div className="text-zinc-400 font-mono mt-1 normal-case">{pontos(a.notaMaxima)} pts</div>
                   </th>
                 ))}
                 <th className="p-6 font-black uppercase text-xs tracking-widest text-zinc-800 text-center">Nota Final</th>
@@ -289,12 +304,7 @@ export default function BoletimPage() {
                         {item.valorObtido === null || item.valorObtido === undefined ? (
                           <span className="text-zinc-300 font-mono font-black">—</span>
                         ) : (
-                          <div className="flex flex-col items-center">
-                            <span className="font-mono font-black text-lg text-zinc-900">{formatarNumero(item.valorObtido, 2)}</span>
-                            <span className="font-mono text-[11px] font-bold text-zinc-500" title="Nota calculada (nota x peso)">
-                              calc. {formatarNumero(item.notaCalculada, 2)}
-                            </span>
-                          </div>
+                          <span className="font-mono font-black text-lg text-zinc-900">{pontos(item.valorObtido)}</span>
                         )}
                       </td>
                     ))}
@@ -303,12 +313,12 @@ export default function BoletimPage() {
                       {aluno.notaFinal === null || aluno.notaFinal === undefined ? (
                         <span className="text-zinc-300 font-mono font-black">---</span>
                       ) : (
-                        <span className={`font-mono font-black text-2xl ${aluno.notaFinal >= (boletim?.mediaMinima ?? 6) ? 'text-emerald-600' : 'text-red-600'}`}>
-                          {formatarNotaFinal(aluno.notaFinal, aluno.notaFinalArredondada)}
+                        <span className={`font-mono font-black text-2xl ${aluno.notaFinal >= notaMinima ? 'text-emerald-600' : 'text-red-600'}`}>
+                          {formatarNumero(aluno.notaFinalArredondada ?? aluno.notaFinal, 1)}
                         </span>
                       )}
                       <div className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mt-1">
-                        {aluno.avaliacoesLancadas}/{aluno.totalAvaliacoes} aval. · peso {formatarPeso(aluno.pesoLancado)}
+                        {pontos(aluno.pontosObtidos ?? 0)} pts · {aluno.avaliacoesLancadas}/{aluno.totalAvaliacoes} ativ.
                       </div>
                     </td>
 
@@ -363,7 +373,7 @@ export default function BoletimPage() {
         </div>
 
         <div className="bg-zinc-50 p-6 border-t border-zinc-200 flex justify-between items-center flex-wrap gap-3 text-xs font-black uppercase tracking-widest text-zinc-500 rounded-b-[2.5rem]">
-          <span>Fly High Idiomas v1.0 · Nota final = soma de (nota x peso%)</span>
+          <span>Fly High Idiomas v1.0 · Nota final = soma dos pontos ÷ {boletim ? formatarNumero(boletim.divisor, boletim.divisor % 1 === 0 ? 0 : 2) : '4 ou 5'}</span>
           <span>Total: {alunosFiltrados.length} Alunos</span>
         </div>
       </section>

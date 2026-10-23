@@ -41,11 +41,21 @@ public class UsuarioController {
     @PutMapping("/editar/{id}")
     @PreAuthorize("hasRole('DIRETOR') or hasAuthority('USUARIOS_WRITE')")
     public ResponseEntity<Usuario> atualizar(@PathVariable Integer id, @RequestBody Usuario dadosNovos) {
-        try {
-            return ResponseEntity.ok(service.atualizar(id, dadosNovos));
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
+        // Erros de validação sobem como ResponseStatusException e chegam com a mensagem certa
+        return ResponseEntity.ok(service.atualizar(id, dadosNovos));
+    }
+
+    // Aprova o cadastro feito pelo aluno: liga a conta ao aluno e libera o acesso
+    @PatchMapping("/{id}/vincular-aluno")
+    @PreAuthorize("hasRole('DIRETOR') or hasAuthority('USUARIOS_WRITE')")
+    public Usuario vincularAluno(@PathVariable Integer id, @RequestBody Map<String, Long> corpo) {
+        return service.vincularAluno(id, corpo.get("idAluno"));
+    }
+
+    @PatchMapping("/{id}/desvincular-aluno")
+    @PreAuthorize("hasRole('DIRETOR') or hasAuthority('USUARIOS_WRITE')")
+    public Usuario desvincularAluno(@PathVariable Integer id) {
+        return service.desvincularAluno(id);
     }
 
     // Ativar/inativar o acesso sem excluir o cadastro
@@ -61,4 +71,4 @@ public class UsuarioController {
         service.deletar(id);
         return ResponseEntity.noContent().build();
     }
-}
+}

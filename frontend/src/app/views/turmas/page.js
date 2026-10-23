@@ -5,6 +5,8 @@ import { InputField, SelectField, LinhaCarregando, LinhaVazia, LinhaErro } from 
 import api, { mensagemErro } from '../../../utils/api';
 import { useRouter } from 'next/navigation'; 
 import { AuthContext } from '../../../context/authContext'; 
+import { ehContaDeAluno } from '../../../utils/permissoes';
+import { MODELOS_AVALIACAO, rotuloModelo } from '../../../utils/notas';
 
 
 export default function TurmasPage() {
@@ -19,7 +21,7 @@ export default function TurmasPage() {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
 
-  const estadoInicial = { codigoTurma: '', id_curso: '', diasSemana: '', horarioInicio: '', horarioFim: '', limiteVagas: '', semestreAno: '', status: 'Aberta', idProfessor: '' };
+  const estadoInicial = { codigoTurma: '', id_curso: '', diasSemana: '', horarioInicio: '', horarioFim: '', limiteVagas: '', semestreAno: '', status: 'Aberta', idProfessor: '', pontuacaoTotal: '400' };
   const [formData, setFormData] = useState(estadoInicial);
 
 
@@ -48,6 +50,7 @@ export default function TurmasPage() {
     const payload = { 
       ...rest, 
       limiteVagas: rest.limiteVagas ? parseInt(rest.limiteVagas) : 0, 
+      pontuacaoTotal: rest.pontuacaoTotal ? parseInt(rest.pontuacaoTotal) : null,
       curso: id_curso ? { id_curso: parseInt(id_curso) } : null, 
       professor: idProfessor ? { idUsuario: parseInt(idProfessor) } : null 
     };
@@ -91,6 +94,9 @@ export default function TurmasPage() {
               {cursos.filter(c => c.ativo).map(c => <option key={c.id_curso} value={c.id_curso}>{c.nome} ({c.tipo})</option>)}
             </SelectField>
             <InputField label="Semestre/Ano" name="semestreAno" placeholder="Ex: 2026.1" onChange={handleChange} value={formData.semestreAno} />
+            <SelectField label="Modelo de avaliação" name="pontuacaoTotal" onChange={handleChange} value={formData.pontuacaoTotal}>
+              {MODELOS_AVALIACAO.map(m => <option key={m.valor} value={m.valor}>{m.rotulo}</option>)}
+            </SelectField>
           </div>
 
           <div className="bg-white p-8 rounded-3xl border border-zinc-200 shadow-sm space-y-8">
@@ -114,7 +120,7 @@ export default function TurmasPage() {
               
               <SelectField label="Professor Responsável" name="idProfessor" onChange={handleChange} value={formData.idProfessor}>
                 <option value="">Selecione o Professor...</option>
-                {usuarios.map(u => (
+                {usuarios.filter(u => !ehContaDeAluno(u)).map(u => (
                   <option key={u.idUsuario} value={u.idUsuario}>
                     {u.nome} (ID: {u.idUsuario})
                   </option>
@@ -162,6 +168,7 @@ export default function TurmasPage() {
                   <td className="p-6 align-middle whitespace-nowrap">
                     <span className="bg-zinc-100 text-zinc-800 px-3 py-1.5 rounded-lg text-base font-black border border-zinc-200 uppercase">{turma.codigoTurma}</span>
                     <div className="text-xs text-zinc-500 font-bold font-mono mt-2 uppercase tracking-widest">SEM: {turma.semestreAno}</div>
+                    <div className="text-[10px] text-zinc-500 font-black mt-1 uppercase tracking-widest">{rotuloModelo(turma.pontuacaoTotal)}</div>
                   </td>
                   
                   <td className="p-6 align-middle">
@@ -213,4 +220,4 @@ export default function TurmasPage() {
       </section>
     </div>
   );
-}
+}

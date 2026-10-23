@@ -11,14 +11,37 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
+/**
+ * Atividades avaliativas da turma. Cada uma vale um número de pontos (nota máxima)
+ * e a soma das atividades fecha a pontuação da turma: 400 ou 500. No fim a soma
+ * do aluno é dividida por 4 ou 5 (ver BoletimService).
+ */
 @Service
 public class AvaliacaoService {
 
-    private static final double PESO_TOTAL = 100.0;
     private static final Long ID_INEXISTENTE = -1L;
+
+    private record ItemModelo(String categoria, String etapa, double pontos) {}
+
+    // As duas planilhas da escola ("Student's Evaluation Chart")
+    private static final Map<Integer, List<ItemModelo>> MODELOS = Map.of(
+            400, montarModelo(
+                    grupo("Written Check", 50, "1st", "2nd", "3rd", "4th"),
+                    grupo("Project", 10, "1st", "2nd", "3rd", "4th"),
+                    grupo("Homework", 10, "1st", "2nd", "3rd", "4th"),
+                    grupo("Performance", 20, "1st", "2nd", "3rd", "4th"),
+                    grupo("Attitude", 10, "1st", "2nd", "3rd", "4th")),
+            500, montarModelo(
+                    grupo("Written Check", 50, "1st", "2nd", "3rd", "4th"),
+                    grupo("Oral Check", 50, "Mid", "Final"),
+                    grupo("Homework", 10, "1st", "2nd", "3rd", "4th"),
+                    grupo("Performance", 30, "1st", "2nd", "3rd", "4th"),
+                    grupo("Attitude", 10, "1st", "2nd", "3rd", "4th")));
 
     @Autowired
     private AvaliacaoRepository avaliacaoRepo;
@@ -33,18 +56,8 @@ public class AvaliacaoService {
     private AcessoPedagogicoService acessoPedagogico;
 
     public Avaliacao salvar(Avaliacao avaliacao) {
-        if (avaliacao.getTitulo() == null || avaliacao.getTitulo().isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Informe o título da avaliação.");
-        }
-        if (avaliacao.getNotaMaxima() == null || avaliacao.getNotaMaxima() <= 0) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A nota máxima deve ser maior que zero.");
-        }
-        if (avaliacao.getData() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Informe a data da avaliação.");
-        }
-
         if (avaliacao.getTurma() == null || avaliacao.getTurma().getId_turma() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Informe a turma da avaliação.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Informe a turma da atividade.");
         }
 
         // Pega a turma no banco para não dar erro de entidade Transient
@@ -53,22 +66,89 @@ public class AvaliacaoService {
 
         acessoPedagogico.validarLancamentoNaTurma(turmaReal);
         avaliacao.setTurma(turmaReal);
-        avaliacao.setTitulo(avaliacao.getTitulo().trim());
 
-        validarPeso(avaliacao, turmaReal.getId_turma());
+        // A tela de edição manda só título, pontos e data; o resto vem do que já está gravado
+        if (avaliacao.getId_avaliacao() != null) {
+            avaliacaoRepo.findById(avaliacao.getId_avaliacao()).ifPresent(existente -> {
+                if (avaliacao.getCategoria() == null) avaliacao.setCategoria(existente.getCategoria());
+                if (avaliacao.getEtapa() == null) avaliacao.setEtapa(existente.getEtapa());
+                if (avaliacao.getOrdem() == null) avaliacao.setOrdem(existente.getOrdem());
+            });
+        }
 
-        // Se a nota máxima diminuiu, notas já lançadas podem ficar acima do teto
+        avaliacao.setCategoria(limpar(avaliacao.getCategoria()));
+        avaliacao.setEtapa(limpar(avaliacao.getEtapa()));
+        String titulo = limpar(avaliacao.getTitulo());
+        if (titulo == null && avaliacao.getCategoria() != null) {
+            titulo = avaliacao.getEtapa() != null
+                    ? avaliacao.getCategoria() + " " + avaliacao.getEtapa()
+                    : avaliacao.getCategoria();
+        }
+        if (titulo == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Informe o nome da atividade.");
+        }
+        avaliacao.setTitulo(titulo);
+
+        if (avaliacao.getNotaMaxima() == null || avaliacao.getNotaMaxima() <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Informe quantos pontos a atividade vale.");
+        }
+        avaliacao.setNotaMaxima(arredondar(avaliacao.getNotaMaxima()));
+
+        validarPontos(avaliacao, turmaReal);
+
+        // Se os pontos diminuíram, notas já lançadas podem ficar acima do teto
         if (avaliacao.getId_avaliacao() != null) {
             boolean notaAcimaDoNovoTeto = notaRepo.findByAvaliacaoId(avaliacao.getId_avaliacao()).stream()
                     .anyMatch(n -> n.getValorObtido() != null && n.getValorObtido() > avaliacao.getNotaMaxima());
             if (notaAcimaDoNovoTeto) {
                 throw new ResponseStatusException(HttpStatus.CONFLICT,
-                        "Existem notas lançadas acima de " + avaliacao.getNotaMaxima()
-                                + ". Ajuste as notas antes de reduzir a nota máxima.");
+                        "Existem notas lançadas acima de " + formatar(avaliacao.getNotaMaxima())
+                                + " pontos. Ajuste as notas antes de reduzir o valor da atividade.");
             }
+        } else if (avaliacao.getOrdem() == null) {
+            avaliacao.setOrdem(avaliacaoRepo.maiorOrdem(turmaReal.getId_turma()) + 1);
         }
 
         return avaliacaoRepo.save(avaliacao);
+    }
+
+    /**
+     * Cria de uma vez todas as atividades da planilha da escola (Modelo 400 ou 500)
+     * e grava o modelo na turma. Só para turma ainda sem atividades.
+     */
+    @Transactional
+    public List<Avaliacao> aplicarModelo(Long idTurma, Integer pontuacao) {
+        List<ItemModelo> modelo = MODELOS.get(pontuacao);
+        if (modelo == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Modelo inválido. Use o Modelo 400 ou o Modelo 500.");
+        }
+
+        Turma turma = turmaRepo.findById(idTurma)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Turma não encontrada."));
+        acessoPedagogico.validarLancamentoNaTurma(turma);
+
+        long existentes = avaliacaoRepo.contarPorTurma(idTurma);
+        if (existentes > 0) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Esta turma já tem " + existentes + " atividade(s). O modelo só pode ser aplicado numa turma sem atividades.");
+        }
+
+        turma.setPontuacaoTotal(pontuacao);
+        turmaRepo.save(turma);
+
+        List<Avaliacao> criadas = new ArrayList<>();
+        int ordem = 1;
+        for (ItemModelo item : modelo) {
+            Avaliacao a = new Avaliacao();
+            a.setTurma(turma);
+            a.setCategoria(item.categoria());
+            a.setEtapa(item.etapa());
+            a.setTitulo(item.categoria() + " " + item.etapa());
+            a.setNotaMaxima(item.pontos());
+            a.setOrdem(ordem++);
+            criadas.add(a);
+        }
+        return avaliacaoRepo.saveAll(criadas);
     }
 
     public List<Avaliacao> listarTodos() {
@@ -82,7 +162,7 @@ public class AvaliacaoService {
     @Transactional
     public void excluir(Long id) {
         Avaliacao avaliacao = avaliacaoRepo.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Avaliação não encontrada."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Atividade não encontrada."));
 
         acessoPedagogico.validarLancamentoNaTurma(avaliacao.getTurma());
 
@@ -95,39 +175,38 @@ public class AvaliacaoService {
         return avaliacaoRepo.findByTurmaId(idTurma);
     }
 
-    /**
-     * O peso é percentual: a soma dos pesos das avaliações da turma fecha 100%.
-     * Quando não informado, assume o percentual que ainda sobrou.
-     */
-    private void validarPeso(Avaliacao avaliacao, Long idTurma) {
+    /** A soma dos pontos das atividades não pode passar da pontuação da turma (400 ou 500). */
+    private void validarPontos(Avaliacao avaliacao, Turma turma) {
+        if (turma.getPontuacaoTotal() == null) return;
+
         Long idIgnorado = avaliacao.getId_avaliacao() != null ? avaliacao.getId_avaliacao() : ID_INEXISTENTE;
-        double jaDistribuido = arredondar(avaliacaoRepo.somarPesos(idTurma, idIgnorado));
-        double disponivel = arredondar(PESO_TOTAL - jaDistribuido);
-
-        if (avaliacao.getPeso() == null) {
-            if (disponivel <= 0) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT,
-                        "Os 100% de peso desta turma já foram distribuídos entre as outras avaliações.");
-            }
-            avaliacao.setPeso(disponivel);
-            return;
-        }
-
-        double peso = arredondar(avaliacao.getPeso());
-        if (peso <= 0 || peso > PESO_TOTAL) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "O peso deve ser um percentual entre 0 e 100.");
-        }
+        double jaDistribuido = arredondar(avaliacaoRepo.somarPontos(turma.getId_turma(), idIgnorado));
+        double disponivel = arredondar(turma.getPontuacaoTotal() - jaDistribuido);
 
         // Margem de 0,01 para não barrar arredondamento de casas decimais
-        if (jaDistribuido + peso > PESO_TOTAL + 0.01) {
+        if (jaDistribuido + avaliacao.getNotaMaxima() > turma.getPontuacaoTotal() + 0.01) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "A soma dos pesos da turma passaria de 100%. As outras avaliações já usam "
-                            + formatar(jaDistribuido) + "%, então ainda cabem "
-                            + formatar(disponivel) + "%.");
+                    "A soma dos pontos da turma passaria de " + turma.getPontuacaoTotal()
+                            + ". As outras atividades já valem " + formatar(jaDistribuido)
+                            + " ponto(s), então ainda cabem " + formatar(Math.max(disponivel, 0)) + ".");
         }
+    }
 
-        avaliacao.setPeso(peso);
+    private static List<ItemModelo> grupo(String categoria, double pontos, String... etapas) {
+        List<ItemModelo> itens = new ArrayList<>();
+        for (String etapa : etapas) itens.add(new ItemModelo(categoria, etapa, pontos));
+        return itens;
+    }
+
+    @SafeVarargs
+    private static List<ItemModelo> montarModelo(List<ItemModelo>... grupos) {
+        List<ItemModelo> todos = new ArrayList<>();
+        for (List<ItemModelo> g : grupos) todos.addAll(g);
+        return List.copyOf(todos);
+    }
+
+    private String limpar(String texto) {
+        return texto == null || texto.isBlank() ? null : texto.trim();
     }
 
     private double arredondar(double valor) {

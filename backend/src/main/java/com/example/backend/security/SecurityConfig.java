@@ -39,6 +39,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/auth/tem-usuarios").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/criar-diretor").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/cadastro").permitAll()
                         .requestMatchers("/error").permitAll()
                         .requestMatchers("/api/usuarios/**").authenticated() // Garante que precisa de login
                         .requestMatchers("/api/perfis/**").authenticated()
@@ -77,4 +78,4 @@ public class SecurityConfig {
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
-}
+}

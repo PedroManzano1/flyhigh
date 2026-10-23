@@ -18,20 +18,19 @@ import java.util.Map;
 /**
  * Monta o boletim da turma cruzando notas e frequência.
  *
- * O peso de cada avaliação é percentual e a nota final é a SOMA das notas calculadas:
- *   nota calculada = (nota / nota máxima x 10) x peso%
- *   ex.: 8,45 com peso 80% = 6,76  |  10,00 com peso 20% = 2,00  |  final = 8,76 (8,8)
- *
- * A ERS não define nota mínima de aprovação nem frequência mínima, então os dois
- * critérios ficam em application.properties (padrão: média 6,0 e 75% de presença):
- *   flyhigh.pedagogico.media-minima=6.0
+ * Cada atividade vale pontos e a turma soma até 400 ou 500 (modelo da turma).
+ * A nota final é a soma dos pontos do aluno dividida por 4 ou 5, ficando de 0 a 100:
+ *   ex.: 352 pontos no Modelo 400 = 352 ÷ 4 = 88,0
+ * Aprova quem termina com 70 ou mais e com a frequência mínima. Os dois critérios
+ * ficam em application.properties:
+ *   flyhigh.pedagogico.nota-minima=70
  *   flyhigh.pedagogico.frequencia-minima=75.0
  */
 @Service
 public class BoletimService {
 
-    @Value("${flyhigh.pedagogico.media-minima:6.0}")
-    private double mediaMinima;
+    @Value("${flyhigh.pedagogico.nota-minima:70.0}")
+    private double notaMinima;
 
     @Value("${flyhigh.pedagogico.frequencia-minima:75.0}")
     private double frequenciaMinima;
@@ -53,6 +52,13 @@ public class BoletimService {
 
     @Autowired
     private FrequenciaRepository frequenciaRepo;
+
+    /** Boletim da turma com uma linha só, a do próprio aluno (área do aluno). */
+    public BoletimTurmaDTO gerarBoletimDoAluno(Long idTurma, Long idAluno) {
+        BoletimTurmaDTO boletim = gerarBoletimDaTurma(idTurma);
+        boletim.getAlunos().removeIf(linha -> !idAluno.equals(linha.getIdAluno()));
+        return boletim;
+    }
 
     public BoletimTurmaDTO gerarBoletimDaTurma(Long idTurma) {
         Turma turma = turmaRepo.findById(idTurma)
@@ -94,16 +100,25 @@ public class BoletimService {
         boletim.setTotalAulas(aulas.size());
         boletim.setTotalAvaliacoes(avaliacoes.size());
         boletim.setTotalAlunos(matriculas.size());
-        boletim.setPesoTotal(arredondar(avaliacoes.stream().mapToDouble(BoletimService::pesoDe).sum()));
-        boletim.setMediaMinima(mediaMinima);
+        double pontosCadastrados = avaliacoes.stream().mapToDouble(BoletimService::pontosDe).sum();
+        // Turma antiga, sem modelo: usa a soma das atividades cadastradas como total
+        double pontuacaoTotal = turma.getPontuacaoTotal() != null ? turma.getPontuacaoTotal() : pontosCadastrados;
+        double divisor = pontuacaoTotal / 100.0;
+
+        boletim.setPontuacaoTotal(arredondar(pontuacaoTotal));
+        boletim.setPontosCadastrados(arredondar(pontosCadastrados));
+        boletim.setDivisor(arredondar(divisor));
+        boletim.setModeloDefinido(turma.getPontuacaoTotal() != null);
+        boletim.setNotaMinima(notaMinima);
         boletim.setFrequenciaMinima(frequenciaMinima);
 
         for (Avaliacao a : avaliacoes) {
             BoletimTurmaDTO.AvaliacaoResumo resumo = new BoletimTurmaDTO.AvaliacaoResumo();
             resumo.setIdAvaliacao(a.getId_avaliacao());
             resumo.setTitulo(a.getTitulo());
+            resumo.setCategoria(a.getCategoria());
+            resumo.setEtapa(a.getEtapa());
             resumo.setNotaMaxima(a.getNotaMaxima());
-            resumo.setPeso(pesoDe(a));
             resumo.setData(a.getData());
             resumo.setNotasLancadas(lancadasPorAvaliacao.getOrDefault(a.getId_avaliacao(), 0));
             boletim.getAvaliacoes().add(resumo);
@@ -112,7 +127,10 @@ public class BoletimService {
         for (Contrato matricula : matriculas) {
             Aluno aluno = matricula.getAluno();
             if (aluno == null) continue;
-            boletim.getAlunos().add(montarLinha(aluno, avaliacoes, notaPorChave, historicoPorAluno));
+            BoletimAlunoDTO linha = montarLinha(aluno, avaliacoes, notaPorChave, historicoPorAluno,
+                    pontuacaoTotal, divisor);
+            definirSituacao(linha, pontosCadastrados, pontuacaoTotal);
+            boletim.getAlunos().add(linha);
         }
 
         return boletim;
@@ -121,7 +139,9 @@ public class BoletimService {
     private BoletimAlunoDTO montarLinha(Aluno aluno,
                                         List<Avaliacao> avaliacoes,
                                         Map<String, Nota> notaPorChave,
-                                        Map<Long, List<String>> historicoPorAluno) {
+                                        Map<Long, List<String>> historicoPorAluno,
+                                        double pontuacaoTotal,
+                                        double divisor) {
 
         BoletimAlunoDTO linha = new BoletimAlunoDTO();
         linha.setIdAluno(aluno.getId_aluno());
@@ -129,38 +149,23 @@ public class BoletimService {
         linha.setNumeroMatricula(aluno.getNumeroMatricula());
         linha.setTotalAvaliacoes(avaliacoes.size());
 
-        double notaFinal = 0;
-        double pesoLancado = 0;
-        double pesoTotal = 0;
+        double pontosObtidos = 0;
+        double pontosLancados = 0;
         int lancadas = 0;
 
         for (Avaliacao a : avaliacoes) {
-            double peso = pesoDe(a);
-            pesoTotal += peso;
-
             BoletimAlunoDTO.ItemNota item = new BoletimAlunoDTO.ItemNota();
             item.setIdAvaliacao(a.getId_avaliacao());
             item.setTitulo(a.getTitulo());
+            item.setCategoria(a.getCategoria());
+            item.setEtapa(a.getEtapa());
             item.setNotaMaxima(a.getNotaMaxima());
-            item.setPeso(peso);
 
             Nota nota = notaPorChave.get(a.getId_avaliacao() + "-" + aluno.getId_aluno());
             if (nota != null && nota.getValorObtido() != null) {
                 item.setValorObtido(nota.getValorObtido());
-
-                // Normaliza para 0 a 10 para que avaliações com tetos diferentes possam ser somadas
-                double base10 = a.getNotaMaxima() != null && a.getNotaMaxima() > 0
-                        ? (nota.getValorObtido() / a.getNotaMaxima()) * 10.0
-                        : nota.getValorObtido();
-
-                // Nota calculada = nota x peso%  (ex.: 8,45 com peso 80% => 6,76)
-                double calculada = base10 * (peso / 100.0);
-
-                item.setNotaBase10(arredondar(base10));
-                item.setNotaCalculada(arredondar(calculada));
-
-                notaFinal += calculada;
-                pesoLancado += peso;
+                pontosObtidos += nota.getValorObtido();
+                pontosLancados += pontosDe(a);
                 lancadas++;
             }
 
@@ -168,11 +173,21 @@ public class BoletimService {
         }
 
         linha.setAvaliacoesLancadas(lancadas);
-        linha.setPesoLancado(arredondar(pesoLancado));
-        linha.setPesoTotal(arredondar(pesoTotal));
-        // Nota final é a soma das notas calculadas, não uma média
-        linha.setNotaFinal(lancadas > 0 ? arredondar(notaFinal) : null);
-        linha.setNotaFinalArredondada(lancadas > 0 ? arredondarUmaCasa(notaFinal) : null);
+        linha.setPontosObtidos(arredondar(pontosObtidos));
+        linha.setPontosLancados(arredondar(pontosLancados));
+
+        if (lancadas > 0 && divisor > 0) {
+            // Nota final = soma dos pontos ÷ 4 (Modelo 400) ou ÷ 5 (Modelo 500)
+            double notaFinal = pontosObtidos / divisor;
+            linha.setNotaFinal(arredondar(notaFinal));
+            linha.setNotaFinalArredondada(arredondarUmaCasa(notaFinal));
+
+            // O que ainda pode entrar: o que não foi lançado das atividades cadastradas
+            // mais o que ainda nem foi cadastrado até fechar o modelo
+            double pontosEmAberto = Math.max(pontuacaoTotal - pontosLancados, 0);
+            linha.setNotaMaximaPossivel(arredondar((pontosObtidos + pontosEmAberto) / divisor));
+        }
+        linha.setAproveitamento(pontosLancados > 0 ? arredondar(pontosObtidos * 100.0 / pontosLancados) : null);
 
         List<String> historico = historicoPorAluno.getOrDefault(aluno.getId_aluno(), List.of());
         int presencas = 0;
@@ -199,48 +214,62 @@ public class BoletimService {
                 ? null
                 : arredondar(((presencas + justificadas) * 100.0) / historico.size()));
 
-        definirSituacao(linha);
         return linha;
     }
 
-    private void definirSituacao(BoletimAlunoDTO linha) {
+    private void definirSituacao(BoletimAlunoDTO linha, double pontosCadastrados, double pontuacaoTotal) {
         if (linha.getAvaliacoesLancadas() == 0 && linha.getAulasRegistradas() == 0) {
             linha.setSituacao("SEM_LANCAMENTOS");
             linha.setObservacao("Nenhuma nota ou presença registrada.");
             return;
         }
 
-        boolean notaAbaixo = linha.getNotaFinal() != null && linha.getNotaFinal() < mediaMinima;
+        boolean notaAbaixo = linha.getNotaFinal() != null && linha.getNotaFinal() < notaMinima;
         boolean frequenciaAbaixo = linha.getPercentualFrequencia() != null
                 && linha.getPercentualFrequencia() < frequenciaMinima;
 
-        // Reprovação por frequência já é definitiva; por nota, só depois de todas as avaliações
+        // Fechou quando todas as atividades foram lançadas e elas cobrem o modelo inteiro
         boolean todasLancadas = linha.getTotalAvaliacoes() > 0
                 && linha.getAvaliacoesLancadas() == linha.getTotalAvaliacoes();
+        boolean modeloCompleto = pontosCadastrados >= pontuacaoTotal - 0.01;
+        boolean semChance = linha.getNotaMaximaPossivel() != null && linha.getNotaMaximaPossivel() < notaMinima;
 
         if (frequenciaAbaixo) {
             linha.setSituacao("REPROVADO");
-            linha.setObservacao("Frequência abaixo de " + frequenciaMinima + "%.");
+            linha.setObservacao("Frequência abaixo de " + formatar(frequenciaMinima) + "%.");
             return;
         }
-        if (todasLancadas && notaAbaixo) {
+        if (semChance) {
             linha.setSituacao("REPROVADO");
-            linha.setObservacao("Nota final abaixo de " + mediaMinima + ".");
+            linha.setObservacao(todasLancadas && modeloCompleto
+                    ? "Nota final abaixo de " + formatar(notaMinima) + "."
+                    : "Mesmo com nota máxima no que falta, não chega a " + formatar(notaMinima) + ".");
             return;
         }
-        if (todasLancadas) {
-            linha.setSituacao("APROVADO");
-            linha.setObservacao("Nota final e frequência dentro do exigido.");
+        if (todasLancadas && modeloCompleto) {
+            linha.setSituacao(notaAbaixo ? "REPROVADO" : "APROVADO");
+            linha.setObservacao(notaAbaixo
+                    ? "Nota final abaixo de " + formatar(notaMinima) + "."
+                    : "Nota final e frequência dentro do exigido.");
             return;
         }
 
         linha.setSituacao("CURSANDO");
-        linha.setObservacao(linha.getAvaliacoesLancadas() + " de " + linha.getTotalAvaliacoes()
-                + " avaliação(ões) lançada(s).");
+        if (todasLancadas) {
+            linha.setObservacao("As atividades cadastradas somam " + formatar(pontosCadastrados)
+                    + " de " + formatar(pontuacaoTotal) + " pontos.");
+        } else {
+            linha.setObservacao(linha.getAvaliacoesLancadas() + " de " + linha.getTotalAvaliacoes()
+                    + " atividade(s) lançada(s).");
+        }
     }
 
-    private static double pesoDe(Avaliacao a) {
-        return a.getPeso() != null && a.getPeso() > 0 ? a.getPeso() : 0.0;
+    private static double pontosDe(Avaliacao a) {
+        return a.getNotaMaxima() != null && a.getNotaMaxima() > 0 ? a.getNotaMaxima() : 0.0;
+    }
+
+    private String formatar(double valor) {
+        return valor == Math.floor(valor) ? String.valueOf((long) valor) : String.valueOf(arredondarUmaCasa(valor));
     }
 
     private Double arredondar(double valor) {

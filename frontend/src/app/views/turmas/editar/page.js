@@ -4,6 +4,8 @@ import { useFeedback } from '../../../../components/feedback';
 import { InputField, SelectField } from '../../../../components/ui';
 import api, { mensagemErro } from '../../../../utils/api';
 import { useRouter, useSearchParams } from 'next/navigation'; 
+import { ehContaDeAluno } from '../../../../utils/permissoes';
+import { MODELOS_AVALIACAO } from '../../../../utils/notas';
 
 
 function EditarTurmaPageConteudo() {
@@ -16,7 +18,7 @@ function EditarTurmaPageConteudo() {
   const [cursos, setCursos] = useState([]);
   const [usuarios, setUsuarios] = useState([]); 
   const [formData, setFormData] = useState({
-    codigoTurma: '', id_curso: '', diasSemana: '', horarioInicio: '', horarioFim: '', limiteVagas: '', semestreAno: '', status: '', idProfessor: ''
+    codigoTurma: '', id_curso: '', diasSemana: '', horarioInicio: '', horarioFim: '', limiteVagas: '', semestreAno: '', status: '', idProfessor: '', pontuacaoTotal: ''
   });
 
   useEffect(() => {
@@ -48,7 +50,8 @@ function EditarTurmaPageConteudo() {
           limiteVagas: turma.limiteVagas || '',
           semestreAno: turma.semestreAno || '',
           status: turma.status || 'Aberta',
-          idProfessor: turma.professor ? String(turma.professor.idUsuario) : ''
+          idProfessor: turma.professor ? String(turma.professor.idUsuario) : '',
+          pontuacaoTotal: turma.pontuacaoTotal ? String(turma.pontuacaoTotal) : ''
         });
       } catch (err) {
         notificar(mensagemErro(err, "Erro ao carregar dados."), 'erro');
@@ -73,6 +76,7 @@ function EditarTurmaPageConteudo() {
       limiteVagas: formData.limiteVagas ? parseInt(formData.limiteVagas) : 0,
       semestreAno: formData.semestreAno,
       status: formData.status,
+      pontuacaoTotal: formData.pontuacaoTotal ? parseInt(formData.pontuacaoTotal) : null,
       curso: formData.id_curso ? { id_curso: parseInt(formData.id_curso) } : null,
       professor: formData.idProfessor ? { idUsuario: parseInt(formData.idProfessor) } : null
     };
@@ -117,6 +121,10 @@ function EditarTurmaPageConteudo() {
             ))}
           </SelectField>
           <InputField label="Semestre/Ano" name="semestreAno" onChange={handleChange} value={formData.semestreAno} />
+          <SelectField label="Modelo de avaliação" name="pontuacaoTotal" onChange={handleChange} value={formData.pontuacaoTotal}>
+            <option value="">Selecione o modelo...</option>
+            {MODELOS_AVALIACAO.map(m => <option key={m.valor} value={m.valor}>{m.rotulo}</option>)}
+          </SelectField>
         </div>
 
         <div className="bg-white p-8 rounded-3xl shadow-sm border border-zinc-200 space-y-8">
@@ -140,7 +148,7 @@ function EditarTurmaPageConteudo() {
             
             <SelectField label="Professor Responsável" name="idProfessor" onChange={handleChange} value={formData.idProfessor}>
               <option value="">Selecione o Professor...</option>
-              {usuarios.map(u => (
+              {usuarios.filter(u => !ehContaDeAluno(u)).map(u => (
                 <option key={u.idUsuario} value={u.idUsuario}>
                   {u.nome} (ID: {u.idUsuario})
                 </option>

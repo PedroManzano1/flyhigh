@@ -7,7 +7,7 @@ import java.util.List;
 
 /**
  * Linha do boletim: desempenho e assiduidade de um aluno na turma.
- * A nota final é a soma das notas calculadas (nota x peso%), não uma média simples.
+ * A nota final é a soma dos pontos dividida por 4 (Modelo 400) ou 5 (Modelo 500).
  */
 @Data
 public class BoletimAlunoDTO {
@@ -16,13 +16,15 @@ public class BoletimAlunoDTO {
     private String nome;
     private String numeroMatricula;
 
-    // Uma entrada por avaliação da turma (valorObtido nulo = ainda não lançada)
+    // Uma entrada por atividade da turma (valorObtido nulo = ainda não lançada)
     private List<ItemNota> notas = new ArrayList<>();
 
-    private Double notaFinal;            // soma das notas calculadas, 2 casas
+    private Double pontosObtidos;        // soma dos pontos do aluno
+    private Double pontosLancados;       // quanto valiam as atividades já lançadas
+    private Double notaFinal;            // pontosObtidos ÷ divisor, de 0 a 100, 2 casas
     private Double notaFinalArredondada; // mesma nota com 1 casa
-    private Double pesoLancado;          // % de peso já lançado para este aluno
-    private Double pesoTotal;            // % de peso cadastrado na turma
+    private Double aproveitamento;       // % dos pontos lançados que o aluno conseguiu
+    private Double notaMaximaPossivel;   // nota final se tirar o máximo no que falta
 
     private int avaliacoesLancadas;
     private int totalAvaliacoes;
@@ -42,10 +44,9 @@ public class BoletimAlunoDTO {
     public static class ItemNota {
         private Long idAvaliacao;
         private String titulo;
-        private Double notaMaxima;
-        private Double peso;           // percentual da avaliação
-        private Double valorObtido;    // nota lançada, na escala da avaliação
-        private Double notaBase10;     // nota convertida para 0 a 10
-        private Double notaCalculada;  // notaBase10 x peso%
+        private String categoria;
+        private String etapa;
+        private Double notaMaxima;     // pontos que a atividade vale
+        private Double valorObtido;    // pontos do aluno
     }
 }

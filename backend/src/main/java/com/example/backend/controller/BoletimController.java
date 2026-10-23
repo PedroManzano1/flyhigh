@@ -16,7 +16,7 @@ public class BoletimController {
     private BoletimService service;
 
     // Tela de leitura: consolida notas e frequência da turma
-    @PreAuthorize("hasRole('DIRETOR') or hasAuthority('AVALIACOES_READ') or hasAuthority('FREQUENCIAS_READ')")
+    @PreAuthorize("hasRole('DIRETOR') or hasAuthority('BOLETIM_READ')")
     @GetMapping("/turma/{idTurma}")
     public ResponseEntity<BoletimTurmaDTO> boletimDaTurma(@PathVariable Long idTurma) {
         return ResponseEntity.ok(service.gerarBoletimDaTurma(idTurma));

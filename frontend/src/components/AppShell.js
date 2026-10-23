@@ -16,10 +16,10 @@ const MODULOS = [
   { href: '/views/turmas', rotulo: 'Turmas', icone: '🗓️', permissao: 'TURMAS_READ' },
   { href: '/views/contratos', rotulo: 'Contratos', icone: '📄', permissao: 'CONTRATOS_READ' },
   { href: '/views/financeiro', rotulo: 'Financeiro', icone: '💰', permissao: 'FINANCEIRO_READ' },
-  { href: '/views/inadimplencia', rotulo: 'Inadimplência', icone: '🚨', permissao: 'FINANCEIRO_READ' },
+  { href: '/views/inadimplencia', rotulo: 'Inadimplência', icone: '🚨', permissao: 'INADIMPLENCIA_READ' },
   { href: '/views/faltas', rotulo: 'Faltas', icone: '📋', permissao: 'FREQUENCIAS_READ' },
   { href: '/views/notas', rotulo: 'Notas', icone: '✍️', permissao: 'AVALIACOES_READ' },
-  { href: '/views/boletim', rotulo: 'Boletim', icone: '📊', permissao: 'AVALIACOES_READ' },
+  { href: '/views/boletim', rotulo: 'Boletim', icone: '📊', permissao: 'BOLETIM_READ' },
   { href: '/views/recados', rotulo: 'Recados', icone: '📢', permissao: 'RECADOS_READ' },
   { href: '/views/usuarios', rotulo: 'Equipe', icone: '👤', permissao: 'USUARIOS_READ' },
   { href: '/views/perfis', rotulo: 'Perfis', icone: '🛡️', permissao: 'PERFIS_READ' }
@@ -36,7 +36,7 @@ function TelaDeEspera({ texto }) {
 export default function AppShell({ children }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { user, carregandoUsuario, signOut, temPermissao } = useContext(AuthContext);
+  const { user, carregandoUsuario, signOut, temPermissao, ehAluno } = useContext(AuthContext);
 
   // Guarda de rota: sem sessão válida ninguém renderiza a tela interna
   useEffect(() => {
@@ -45,8 +45,14 @@ export default function AppShell({ children }) {
     }
   }, [carregandoUsuario, user, router]);
 
+  // As telas internas são da equipe; conta de aluno fica na área do aluno
+  useEffect(() => {
+    if (ehAluno) router.replace('/minha-area');
+  }, [ehAluno, router]);
+
   if (carregandoUsuario) return <TelaDeEspera texto="Carregando Fly High..." />;
   if (!user) return <TelaDeEspera texto="Redirecionando para o login..." />;
+  if (ehAluno) return <TelaDeEspera texto="Abrindo a sua área..." />;
 
   const modulosLiberados = MODULOS.filter(m => temPermissao(m.permissao));
 

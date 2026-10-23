@@ -48,11 +48,13 @@ public class PerfilService {
             perfilAtualizado.setIdPerfil(id);
             validarNomeUnico(perfilAtualizado);
 
-            // O perfil DIRETOR é a base do controle de acesso e não pode ser renomeado
-            if ("DIRETOR".equals(perfilExistente.getNomePerfil())
-                    && !"DIRETOR".equals(perfilAtualizado.getNomePerfil())) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT,
-                        "O perfil DIRETOR não pode ser renomeado, pois é usado nas regras de acesso do sistema.");
+            // DIRETOR e ALUNO são a base do controle de acesso e não podem ser renomeados
+            for (String reservado : new String[]{"DIRETOR", UsuarioService.PERFIL_ALUNO}) {
+                if (reservado.equals(perfilExistente.getNomePerfil())
+                        && !reservado.equals(perfilAtualizado.getNomePerfil())) {
+                    throw new ResponseStatusException(HttpStatus.CONFLICT,
+                            "O perfil " + reservado + " não pode ser renomeado, pois é usado nas regras de acesso do sistema.");
+                }
             }
 
             perfilExistente.setNomePerfil(perfilAtualizado.getNomePerfil());

@@ -4,18 +4,7 @@ import { useFeedback } from '../../../../components/feedback';
 import { InputField } from '../../../../components/ui';
 import api, { mensagemErro } from '../../../../utils/api'; 
 import { useRouter, useSearchParams } from 'next/navigation'; 
-
-
-const MODULOS = ["USUARIOS", "ALUNOS", "RESPONSAVEIS", "CURSOS", "TURMAS", "VINCULOS",
-  "PERFIS", "RECADOS", "CONTRATOS", "FINANCEIRO", "FREQUENCIAS", "AVALIACOES"];
-
-const ROTULOS_MODULO = {
-  VINCULOS: '🔗 VÍNCULOS (FAMÍLIA)',
-  CONTRATOS: '📄 CONTRATOS (MATRÍCULAS)',
-  FINANCEIRO: '💰 FINANCEIRO (BAIXA DE PARCELAS)',
-  FREQUENCIAS: '🗓️ FREQUÊNCIAS (FALTAS)',
-  AVALIACOES: '📝 AVALIAÇÕES (NOTAS)'
-};
+import { MODULOS, ROTULO_MODULO, SOMENTE_LEITURA } from '../../../../utils/permissoes';
 
 function EditarPerfilPageConteudo() {
   const router = useRouter();
@@ -164,18 +153,24 @@ function EditarPerfilPageConteudo() {
               <tbody>
                 {MODULOS.map((modulo, index) => (
                   <tr key={modulo} className={`border-b border-zinc-100 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} hover:bg-yellow-50/50 transition-colors`}>
-                    <td className="p-4 font-black text-sm text-zinc-800 tracking-wider">
-                      {ROTULOS_MODULO[modulo] || `📁 ${modulo}`}
+                    <td className="p-4 font-black text-sm text-zinc-800 tracking-wider uppercase">
+                      {ROTULO_MODULO[modulo] || `📁 ${modulo}`}
                     </td>
                     <td className="p-4 text-center">
                       <input type="checkbox" checked={permissoes[modulo].podeLer} onChange={() => handleCheckboxChange(modulo, 'podeLer')} className="w-6 h-6 accent-zinc-900 cursor-pointer" />
                     </td>
-                    <td className="p-4 text-center">
-                      <input type="checkbox" checked={permissoes[modulo].podeEscrever} onChange={() => handleCheckboxChange(modulo, 'podeEscrever')} className="w-6 h-6 accent-zinc-900 cursor-pointer" />
-                    </td>
-                    <td className="p-4 text-center bg-red-50/30">
-                      <input type="checkbox" checked={permissoes[modulo].podeExcluir} onChange={() => handleCheckboxChange(modulo, 'podeExcluir')} className="w-6 h-6 accent-red-500 cursor-pointer" />
-                    </td>
+                    {SOMENTE_LEITURA.has(modulo) ? (
+                      <td colSpan={2} className="p-4 text-center text-[10px] font-black uppercase tracking-widest text-zinc-400">Somente consulta</td>
+                    ) : (
+                      <>
+                        <td className="p-4 text-center">
+                          <input type="checkbox" checked={permissoes[modulo].podeEscrever} onChange={() => handleCheckboxChange(modulo, 'podeEscrever')} className="w-6 h-6 accent-zinc-900 cursor-pointer" />
+                        </td>
+                        <td className="p-4 text-center bg-red-50/30">
+                          <input type="checkbox" checked={permissoes[modulo].podeExcluir} onChange={() => handleCheckboxChange(modulo, 'podeExcluir')} className="w-6 h-6 accent-red-500 cursor-pointer" />
+                        </td>
+                      </>
+                    )}
                   </tr>
                 ))}
               </tbody>

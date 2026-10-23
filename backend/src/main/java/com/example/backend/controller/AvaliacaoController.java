@@ -23,6 +23,13 @@ public class AvaliacaoController {
         return service.salvar(avaliacao);
     }
 
+    // Cria as atividades da planilha da escola: /modelo/400 ou /modelo/500
+    @PreAuthorize("hasRole('DIRETOR') or hasAuthority('AVALIACOES_WRITE')")
+    @PostMapping("/turma/{idTurma}/modelo/{pontuacao}")
+    public List<Avaliacao> aplicarModelo(@PathVariable Long idTurma, @PathVariable Integer pontuacao) {
+        return service.aplicarModelo(idTurma, pontuacao);
+    }
+
     @PreAuthorize("hasRole('DIRETOR') or hasAuthority('AVALIACOES_READ')")
     @GetMapping
     public List<Avaliacao> getAll() {
@@ -61,4 +68,4 @@ public class AvaliacaoController {
         }
         return ResponseEntity.notFound().build();
     }
-}
+}

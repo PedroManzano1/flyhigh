@@ -6,6 +6,7 @@ import lombok.Data;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -26,12 +27,25 @@ public class Usuario implements UserDetails {
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String senha;
     private String nome;
-    private String status; // Ex: "ATIVO", "INATIVO"
+    // ATIVO, INATIVO ou PENDENTE (cadastro feito pelo próprio aluno, aguardando a secretaria)
+    private String status;
 
     //Garante que o perfil carregue junto com o usuário na hora do login
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "id_perfil")
     private Perfil perfil;
+
+    // Conta de aluno: o aluno que ela representa. Fica nulo nas contas da equipe.
+    @ManyToOne
+    @JoinColumn(name = "id_aluno")
+    private Aluno aluno;
+
+    // Matrícula que o aluno digitou ao se cadastrar, para a secretaria achar quem é
+    @Column(name = "matricula_informada")
+    private String matriculaInformada;
+
+    @Column(name = "data_cadastro")
+    private LocalDateTime dataCadastro;
 
     // --- MÉTODOS DO SPRING SECURITY (UserDetails) ---
     @JsonIgnore
@@ -80,4 +94,4 @@ public class Usuario implements UserDetails {
     @JsonIgnore
     @Override
     public boolean isEnabled() { return "ATIVO".equalsIgnoreCase(this.status); }
-}
+}

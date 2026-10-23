@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Boletim completo de uma turma: cabeçalho, avaliações aplicadas e a linha de cada aluno.
+ * Boletim completo de uma turma: cabeçalho, atividades e a linha de cada aluno.
  */
 @Data
 public class BoletimTurmaDTO {
@@ -22,11 +22,15 @@ public class BoletimTurmaDTO {
     private int totalAvaliacoes;
     private int totalAlunos;
 
-    // Soma dos pesos cadastrados. Deve fechar 100% para o boletim estar completo.
-    private Double pesoTotal;
+    // Modelo da turma (400 ou 500), quanto as atividades cadastradas já somam
+    // e o divisor que leva a soma para a escala de 0 a 100 (4 ou 5)
+    private Double pontuacaoTotal;
+    private Double pontosCadastrados;
+    private Double divisor;
+    private boolean modeloDefinido;
 
-    // Critérios de aprovação aplicados (configuráveis no application.properties)
-    private Double mediaMinima;
+    // Critérios de aprovação (configuráveis no application.properties)
+    private Double notaMinima;
     private Double frequenciaMinima;
 
     private List<AvaliacaoResumo> avaliacoes = new ArrayList<>();
@@ -36,8 +40,9 @@ public class BoletimTurmaDTO {
     public static class AvaliacaoResumo {
         private Long idAvaliacao;
         private String titulo;
+        private String categoria;
+        private String etapa;
         private Double notaMaxima;
-        private Double peso;
         private LocalDate data;
         private int notasLancadas;
     }

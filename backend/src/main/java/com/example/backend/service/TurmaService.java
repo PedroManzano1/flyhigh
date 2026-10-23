@@ -56,6 +56,8 @@ public class TurmaService {
             turma.setCurso(null);
         }
 
+        validarPontuacao(turma);
+
         //o professor vinculado precisa ser um usuário ATIVO.
         if (turma.getProfessor() != null && turma.getProfessor().getIdUsuario() != null) {
             Usuario professorReal = usuarioRepo.findById(turma.getProfessor().getIdUsuario())
@@ -70,6 +72,27 @@ public class TurmaService {
         }
 
         return turmaRepo.save(turma);
+    }
+
+    /**
+     * Modelo de avaliação: 400 (soma ÷ 4) ou 500 (soma ÷ 5). Não pode ficar abaixo
+     * dos pontos que as atividades da turma já somam.
+     */
+    private void validarPontuacao(Turma turma) {
+        Integer pontuacao = turma.getPontuacaoTotal();
+        if (pontuacao == null) return;
+        if (pontuacao <= 0 || pontuacao % 100 != 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "O modelo de avaliação deve ser 400 ou 500 pontos.");
+        }
+        if (turma.getId_turma() != null) {
+            double distribuidos = avaliacaoRepo.somarPontos(turma.getId_turma(), -1L);
+            if (distribuidos > pontuacao + 0.01) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT,
+                        "As atividades desta turma já somam " + Math.round(distribuidos)
+                                + " pontos, mais que o Modelo " + pontuacao + ". Ajuste as atividades antes de trocar o modelo.");
+            }
+        }
     }
 
     public List<Turma> listarTodos() {

@@ -3,7 +3,7 @@
 import { createContext, useState, useEffect } from 'react';
 import { jwtDecode } from 'jwt-decode';
 import { useRouter } from 'next/navigation'; // Roteador do Next.js
-import api from '../utils/api';
+import api, { mensagemErro } from '../utils/api';
 
 export const AuthContext = createContext({});
 
@@ -49,11 +49,14 @@ export function AuthProvider({ children }) {
             const { token } = response.data;
 
             localStorage.setItem('flyhigh_token', token);
-            setUser(lerToken(token));
+            const dados = lerToken(token);
+            setUser(dados);
 
-            router.push('/'); // Manda para a página inicial após logar
+            // Conta de aluno vai direto para a área dele
+            router.push(dados?.permissoes?.includes('ROLE_ALUNO') ? '/minha-area' : '/');
         } catch (error) {
-            throw new Error("Login ou senha incorretos.");
+            // Mostra o motivo que o backend deu (cadastro aguardando aprovação, acesso inativo...)
+            throw new Error(mensagemErro(error, "Login ou senha incorretos."));
         }
     }
 
@@ -70,8 +73,10 @@ export function AuthProvider({ children }) {
         return user.permissoes.includes('ROLE_DIRETOR') || user.permissoes.includes(permissaoNecessaria);
     }
 
+    const ehAluno = !!user?.permissoes?.includes('ROLE_ALUNO');
+
     return (
-        <AuthContext.Provider value={{ user, signIn, signOut, temPermissao, carregandoUsuario, isAuthenticated: !!user }}>
+        <AuthContext.Provider value={{ user, signIn, signOut, temPermissao, ehAluno, carregandoUsuario, isAuthenticated: !!user }}>
             {children}
         </AuthContext.Provider>
     );
