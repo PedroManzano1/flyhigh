@@ -48,5 +48,6 @@ export const corDaSituacao = (situacao) => {
   if (situacao === 'APROVADO') return 'bg-emerald-50 text-emerald-700 border-emerald-200';
   if (situacao === 'REPROVADO') return 'bg-red-50 text-red-700 border-red-200';
   if (situacao === 'CURSANDO') return 'bg-sky-50 text-sky-700 border-sky-200';
+  if (situacao === 'EM_RISCO') return 'bg-amber-100 text-amber-800 border-amber-300';
   return 'bg-zinc-100 text-zinc-500 border-zinc-200';
 };

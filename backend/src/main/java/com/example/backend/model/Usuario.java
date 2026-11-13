@@ -40,7 +40,11 @@ public class Usuario implements UserDetails {
     @JoinColumn(name = "id_aluno")
     private Aluno aluno;
 
-    // Matrícula que o aluno digitou ao se cadastrar, para a secretaria achar quem é
+    // CPF digitado no cadastro (só números). É por ele que o sistema acha o aluno.
+    @Column(name = "cpf_informado")
+    private String cpfInformado;
+
+    // Matrícula do aluno encontrado pelo CPF no momento do cadastro (vazia se não achou)
     @Column(name = "matricula_informada")
     private String matriculaInformada;
 

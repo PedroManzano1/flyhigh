@@ -1,5 +1,6 @@
 package com.example.backend.model;
 
+import com.fasterxml.jackson.annotation.JsonIncludeProperties;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.time.LocalDate;
@@ -29,6 +30,9 @@ public class RecadoGeral {
     private String arquivoAnexo;
 
     // Relacionamento com a classe Usuario que você já criou
+    // No JSON sai só id e nome: o usuário inteiro trazia login, perfil com as
+    // permissões e o CPF informado no cadastro
+    @JsonIncludeProperties({"idUsuario", "nome"})
     @ManyToOne
     @JoinColumn(name = "id_usuario_autor", nullable = false)
     private Usuario usuarioAutor;

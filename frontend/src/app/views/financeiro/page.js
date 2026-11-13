@@ -186,11 +186,12 @@ function ModalAjuste({ parcela, salvando, onCancelar, onConfirmar }) {
 function LinhaParcela({ p, podeBaixar, podeEstornar, onBaixar, onAjustar, onEstornar, onExcluir }) {
   const paga = (p.status || '').toUpperCase() === 'PAGA';
   const atrasada = (p.status || '').toUpperCase() === 'ATRASADA';
+  const cancelada = (p.status || '').toUpperCase() === 'CANCELADA';
   const temDesconto = p.valorOriginal != null && p.valor != null && p.valorOriginal - p.valor > 0.009;
   const contratoInativo = p.statusContrato && p.statusContrato.toUpperCase() !== 'ATIVO';
 
   return (
-    <tr className={`border-b border-zinc-100 hover:bg-yellow-50/50 transition-colors ${atrasada ? 'bg-red-50/40' : ''}`}>
+    <tr className={`border-b border-zinc-100 hover:bg-yellow-50/50 transition-colors ${atrasada ? 'bg-red-50/40' : ''} ${cancelada ? 'opacity-60' : ''}`}>
       <td className="p-6 align-middle whitespace-nowrap">
         <div className="font-mono font-black text-zinc-900">{formatarData(p.dataVencimento)}</div>
         {atrasada && (
@@ -253,6 +254,10 @@ function LinhaParcela({ p, podeBaixar, podeEstornar, onBaixar, onAjustar, onEsto
               </span>
             )}
           </div>
+        ) : cancelada ? (
+          <span className="text-xs font-bold text-zinc-500">
+            Não é cobrada: matrícula {(p.statusContrato || 'inativa').toLowerCase()}
+          </span>
         ) : (
           <span className="text-zinc-300 font-black">—</span>
         )}
@@ -266,7 +271,7 @@ function LinhaParcela({ p, podeBaixar, podeEstornar, onBaixar, onAjustar, onEsto
 
       <td className="p-6 align-middle">
         <div className="flex justify-center gap-3">
-          {!paga && podeBaixar && (
+          {!paga && !cancelada && podeBaixar && (
             <>
               <button
                 onClick={() => onBaixar(p)} title="Marcar como paga"
@@ -290,7 +295,7 @@ function LinhaParcela({ p, podeBaixar, podeEstornar, onBaixar, onAjustar, onEsto
               className="w-12 h-12 flex items-center justify-center bg-white text-zinc-900 border-2 border-zinc-200 hover:bg-red-600 hover:text-white rounded-xl transition-all shadow-md text-xl"
             >↺</button>
           )}
-          {((paga && !podeEstornar) || (!paga && !podeBaixar && !podeEstornar)) && (
+          {((paga && !podeEstornar) || (!paga && !podeEstornar && (cancelada || !podeBaixar))) && (
             <span className="text-zinc-300 font-black">—</span>
           )}
         </div>

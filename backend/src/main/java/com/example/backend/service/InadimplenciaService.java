@@ -101,6 +101,8 @@ public class InadimplenciaService {
         }
 
         void adicionarParcela(LancamentoFinanceiro parcela, LocalDate hoje) {
+            // Parcela de matrícula trancada ou cancelada não é dívida
+            if (LancamentoFinanceiro.CANCELADA.equals(parcela.statusEm(hoje))) return;
             parcelas.putIfAbsent(parcela.getIdLancamento(), ParcelaFinanceiraDTO.de(parcela, hoje));
         }
 

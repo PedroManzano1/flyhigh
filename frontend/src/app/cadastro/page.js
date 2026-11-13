@@ -2,10 +2,13 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import api, { mensagemErro } from '../../utils/api';
+import { formatarCpf, cpfValido, somenteNumeros } from '../../utils/cpf';
 
 /**
- * Cadastro feito pelo próprio aluno. A conta nasce aguardando aprovação: a
- * secretaria liga a conta ao aluno certo na tela de Equipe e só então ela entra.
+ * Cadastro feito pelo próprio aluno. O CPF informado é usado pelo backend para achar
+ * a matrícula do aluno; a conta nasce aguardando aprovação e a secretaria confirma o
+ * vínculo na tela de Equipe. A tela não mostra o que foi encontrado, para ninguém
+ * descobrir dados de um aluno só digitando um CPF.
  */
 
 const CLASSE_INPUT =
@@ -22,17 +25,21 @@ function Campo({ label, dica, ...props }) {
 }
 
 export default function CadastroPage() {
-  const [dados, setDados] = useState({ nome: '', matricula: '', login: '', senha: '', confirmacao: '' });
+  const [dados, setDados] = useState({ nome: '', cpf: '', login: '', senha: '', confirmacao: '' });
   const [erro, setErro] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [enviado, setEnviado] = useState(false);
 
-  const alterar = (e) => setDados(atual => ({ ...atual, [e.target.name]: e.target.value }));
+  const alterar = (e) => {
+    const { name, value } = e.target;
+    setDados(atual => ({ ...atual, [name]: name === 'cpf' ? formatarCpf(value) : value }));
+  };
 
   const enviar = async (e) => {
     e.preventDefault();
     setErro('');
-    if (dados.senha.length < 6) return setErro('A senha precisa ter pelo menos 6 caracteres.');
+    if (!cpfValido(dados.cpf)) return setErro('Confira o CPF: os números não formam um CPF válido.');
+    if (dados.senha.length < 8) return setErro('A senha precisa ter pelo menos 8 caracteres.');
     if (dados.senha !== dados.confirmacao) return setErro('As duas senhas não são iguais.');
     if (/\s/.test(dados.login.trim())) return setErro('O login não pode ter espaços.');
 
@@ -40,7 +47,7 @@ export default function CadastroPage() {
     try {
       await api.post('/api/auth/cadastro', {
         nome: dados.nome.trim(),
-        matricula: dados.matricula.trim(),
+        cpf: somenteNumeros(dados.cpf),
         login: dados.login.trim(),
         senha: dados.senha
       });
@@ -87,11 +94,12 @@ export default function CadastroPage() {
               <form onSubmit={enviar} className="space-y-5">
                 <Campo label="Nome completo do aluno" name="nome" value={dados.nome} onChange={alterar} required placeholder="Como está na matrícula" />
                 <Campo
-                  label="Nº de matrícula (se souber)" name="matricula" value={dados.matricula} onChange={alterar}
-                  placeholder="Ex: 2026001" dica="Ajuda a secretaria a encontrar o seu cadastro mais rápido."
+                  label="CPF do aluno" name="cpf" value={dados.cpf} onChange={alterar} required
+                  inputMode="numeric" placeholder="000.000.000-00"
+                  dica="É pelo CPF que encontramos a sua matrícula na escola."
                 />
                 <Campo label="Escolha um login" name="login" value={dados.login} onChange={alterar} required placeholder="Sem espaços" autoComplete="username" />
-                <Campo label="Senha" name="senha" type="password" value={dados.senha} onChange={alterar} required placeholder="Pelo menos 6 caracteres" autoComplete="new-password" />
+                <Campo label="Senha" name="senha" type="password" value={dados.senha} onChange={alterar} required placeholder="Pelo menos 8 caracteres" autoComplete="new-password" />
                 <Campo label="Repita a senha" name="confirmacao" type="password" value={dados.confirmacao} onChange={alterar} required autoComplete="new-password" />
 
                 {erro && (

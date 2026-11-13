@@ -56,7 +56,7 @@ function EditarRecadoPageConteudo() {
       await api.put(`/api/recados/editar/${id}`, payload);
       notificar("Recado atualizado com sucesso!", 'sucesso');
       router.push('/views/recados'); 
-    } catch (err) { notificar(mensagemErro(err, "Erro ao atualizar o recado.")); console.error(err, 'erro'); }
+    } catch (err) { notificar(mensagemErro(err, "Erro ao atualizar o recado."), 'erro'); }
   };
 
   if (loading) {

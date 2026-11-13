@@ -4,8 +4,10 @@ import com.example.backend.model.Aluno;
 import com.example.backend.model.Avaliacao;
 import com.example.backend.model.Nota;
 import com.example.backend.model.NotaKey;
+import com.example.backend.model.Turma;
 import com.example.backend.repository.AlunoRepository;
 import com.example.backend.repository.AvaliacaoRepository;
+import com.example.backend.repository.ContratoRepository;
 import com.example.backend.repository.NotaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -30,6 +32,9 @@ public class NotaService {
 
     @Autowired
     private AcessoPedagogicoService acessoPedagogico;
+
+    @Autowired
+    private ContratoRepository contratoRepo;
 
     public List<Nota> buscarNotasPorAluno(Long idAluno) {
         return notaRepo.findByAlunoId(idAluno);
@@ -84,6 +89,14 @@ public class NotaService {
         notaRepo.deleteById(chave);
     }
 
+    private void exigirMatriculado(Turma turma, Aluno aluno) {
+        if (turma == null) return;
+        if (contratoRepo.contarMatriculaParaLancamento(turma.getId_turma(), aluno.getId_aluno()) == 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    aluno.getNome() + " não tem matrícula ativa na turma " + turma.getCodigoTurma() + ".");
+        }
+    }
+
     private Nota prepararParaSalvar(Nota nota) {
         if (nota.getAvaliacao() == null || nota.getAvaliacao().getId_avaliacao() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Informe a avaliação.");
@@ -99,6 +112,10 @@ public class NotaService {
 
         // Professor só lança nota na própria turma
         acessoPedagogico.validarLancamentoNaTurma(avaliacaoReal.getTurma());
+        // Remover uma nota (valor vazio) é sempre aceito; lançar exige matrícula na turma
+        if (nota.getValorObtido() != null) {
+            exigirMatriculado(avaliacaoReal.getTurma(), alunoReal);
+        }
 
         if (nota.getValorObtido() != null) {
             if (nota.getValorObtido() < 0) {

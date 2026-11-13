@@ -1,6 +1,7 @@
 package com.example.backend.controller;
 
 import com.example.backend.dto.BoletimTurmaDTO;
+import com.example.backend.service.AcessoPedagogicoService;
 import com.example.backend.service.BoletimService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -15,10 +16,14 @@ public class BoletimController {
     @Autowired
     private BoletimService service;
 
+    @Autowired
+    private AcessoPedagogicoService acesso;
+
     // Tela de leitura: consolida notas e frequência da turma
     @PreAuthorize("hasRole('DIRETOR') or hasAuthority('BOLETIM_READ')")
     @GetMapping("/turma/{idTurma}")
     public ResponseEntity<BoletimTurmaDTO> boletimDaTurma(@PathVariable Long idTurma) {
+        acesso.validarLeituraDaTurma(idTurma);
         return ResponseEntity.ok(service.gerarBoletimDaTurma(idTurma));
     }
 }

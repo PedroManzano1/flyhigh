@@ -14,6 +14,8 @@ export default function RecadosPage() {
 
   const [recados, setRecados] = useState([]);
   const [loading, setLoading] = useState(true);
+  // Sem isso, uma falha ao carregar aparecia como "nenhum recado"
+  const [erroCarregar, setErroCarregar] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
 
   const estadoInicial = { titulo: '', mensagem: '', dataExpiracao: '', arquivoAnexo: '' };
@@ -23,9 +25,12 @@ export default function RecadosPage() {
   const carregarRecados = async () => {
     setLoading(true);
     try {
-      const res = await api.get('/api/recados'); 
-      setRecados(res.data);
-    } catch (err) { console.error(err); } finally { setLoading(false); }
+      const res = await api.get('/api/recados');
+      setRecados(Array.isArray(res.data) ? res.data : []);
+      setErroCarregar(null);
+    } catch (err) {
+      setErroCarregar(mensagemErro(err, "Não foi possível carregar os recados."));
+    } finally { setLoading(false); }
   };
 
   useEffect(() => { carregarRecados(); }, []);
@@ -117,6 +122,16 @@ export default function RecadosPage() {
             <div className="flex justify-center items-center h-full text-zinc-500 font-black uppercase tracking-widest text-xl">
               Carregando mural...
             </div>
+          ) : erroCarregar ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center gap-6">
+              <h3 className="font-black text-lg text-red-600 uppercase tracking-widest">{erroCarregar}</h3>
+              <button
+                onClick={carregarRecados}
+                className="px-6 py-3 bg-zinc-900 text-white rounded-xl font-black uppercase text-xs tracking-widest hover:bg-yellow-400 hover:text-zinc-900 transition-all"
+              >
+                Tentar de novo
+              </button>
+            </div>
           ) : recadosFiltrados.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center">
               <span className="text-6xl mb-4 opacity-50">📭</span>
@@ -158,7 +173,7 @@ export default function RecadosPage() {
                   <div className="bg-zinc-50 p-6 border-t border-zinc-100 flex flex-col sm:flex-row justify-between items-center gap-4">
                     <div className="flex flex-col gap-1.5 text-xs font-bold w-full">
                       <span className="text-zinc-600 bg-white border border-zinc-200 px-3 py-1 rounded-lg w-max uppercase">
-                        AUTOR: {recado.usuarioAutor?.login || 'SISTEMA'}
+                        AUTOR: {recado.usuarioAutor?.nome || 'SISTEMA'}
                       </span>
                       <span className="text-zinc-500 mt-1">
                         <span className="text-zinc-400">PUB:</span> {new Date(recado.dataPublicacao).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}

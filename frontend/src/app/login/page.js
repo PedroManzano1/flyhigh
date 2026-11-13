@@ -3,7 +3,7 @@ import { useState, useContext, useEffect } from 'react';
 import Link from 'next/link';
 import { useFeedback } from '../../components/feedback';
 import { AuthContext } from '../../context/authContext';
-import api, { mensagemErro } from '../../utils/api';
+import api, { mensagemErro, AVISO_LOGIN } from '../../utils/api';
 
 export default function Login() {
   const { notificar } = useFeedback();
@@ -12,6 +12,17 @@ export default function Login() {
     const [senha, setSenha] = useState('');
     const [isPrimeiroAcesso, setIsPrimeiroAcesso] = useState(false);
     const [carregando, setCarregando] = useState(true);
+
+    // Aviso deixado pelo api.js quando a sessão terminou no meio do uso
+    useEffect(() => {
+        try {
+            const aviso = sessionStorage.getItem(AVISO_LOGIN);
+            if (aviso) {
+                sessionStorage.removeItem(AVISO_LOGIN);
+                notificar(aviso, 'alerta');
+            }
+        } catch { /* navegador sem sessionStorage */ }
+    }, [notificar]);
 
     useEffect(() => {
         // Verifica com o Spring se o banco está vazio
@@ -91,7 +102,8 @@ export default function Login() {
                             <input 
                                 className="w-full p-3 bg-zinc-50 border-2 border-zinc-900 rounded-xl font-bold focus:ring-2 focus:ring-yellow-400 outline-none transition-all"
                                 type="password" 
-                                placeholder="••••••••" 
+                                placeholder={isPrimeiroAcesso ? 'Mínimo 8 caracteres' : '••••••••'}
+                                minLength={isPrimeiroAcesso ? 8 : undefined}
                                 value={senha} 
                                 onChange={e => setSenha(e.target.value)} 
                                 required
@@ -124,4 +136,4 @@ export default function Login() {
             </div>
         </div>
     );
-}
+}

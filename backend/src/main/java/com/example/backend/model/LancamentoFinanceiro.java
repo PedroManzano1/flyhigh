@@ -24,6 +24,9 @@ public class LancamentoFinanceiro {
     public static final String PENDENTE = "PENDENTE";
     public static final String PAGA = "PAGA";
     public static final String ATRASADA = "ATRASADA";
+    // Parcela que deixou de valer porque a matrícula foi cancelada ou trancada.
+    // Não soma em nenhum total e volta a PENDENTE se a matrícula for reativada.
+    public static final String CANCELADA = "CANCELADA";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -64,7 +67,7 @@ public class LancamentoFinanceiro {
     @Column(name = "data_pagamento")
     private LocalDate dataPagamento;
 
-    // PENDENTE, PAGA ou ATRASADA
+    // PENDENTE, PAGA, ATRASADA ou CANCELADA
     @Column(name = "status")
     private String status;
 
@@ -90,6 +93,10 @@ public class LancamentoFinanceiro {
         return PAGA.equalsIgnoreCase(status) || dataPagamento != null;
     }
 
+    public boolean estaCancelada() {
+        return !estaPaga() && CANCELADA.equalsIgnoreCase(status);
+    }
+
     public void registrarPagamento(LocalDate data, String forma, String observacao, String usuario) {
         this.dataPagamento = data;
         this.formaPagamento = forma;
@@ -111,6 +118,7 @@ public class LancamentoFinanceiro {
     /** Status de leitura: vencida e sem baixa é ATRASADA. Não altera a parcela. */
     public String statusEm(LocalDate hoje) {
         if (estaPaga()) return PAGA;
+        if (estaCancelada()) return CANCELADA;
         return dataVencimento != null && dataVencimento.isBefore(hoje) ? ATRASADA : PENDENTE;
     }
 

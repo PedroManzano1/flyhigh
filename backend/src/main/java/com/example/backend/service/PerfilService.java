@@ -21,6 +21,9 @@ public class PerfilService {
     @Autowired
     private UsuarioRepository usuarioRepository;
 
+    @Autowired
+    private ControleAcessoService acesso;
+
     public List<Perfil> listarTodos() {
         return perfilRepository.findAll();
     }
@@ -30,8 +33,12 @@ public class PerfilService {
     }
 
     public Perfil salvar(Perfil perfil) {
+        // Cadastro é sempre um perfil novo: um id vindo no corpo sobrescreveria um
+        // perfil existente (até o DIRETOR) sem passar pelas regras da edição
+        perfil.setIdPerfil(null);
         prepararNome(perfil);
         validarNomeUnico(perfil);
+        acesso.exigirPodeEditarPerfil(null, perfil.getPermissoes());
 
         // Amarra as permissões filhas ao perfil pai antes de salvar
         if (perfil.getPermissoes() != null) {
@@ -44,6 +51,7 @@ public class PerfilService {
 
     public Perfil atualizar(Integer id, Perfil perfilAtualizado) {
         return perfilRepository.findById(id).map(perfilExistente -> {
+            acesso.exigirPodeEditarPerfil(perfilExistente, perfilAtualizado.getPermissoes());
             prepararNome(perfilAtualizado);
             perfilAtualizado.setIdPerfil(id);
             validarNomeUnico(perfilAtualizado);

@@ -4,8 +4,10 @@ import com.example.backend.model.Aluno;
 import com.example.backend.model.Aula;
 import com.example.backend.model.Frequencia;
 import com.example.backend.model.FrequenciaKey;
+import com.example.backend.model.Turma;
 import com.example.backend.repository.AlunoRepository;
 import com.example.backend.repository.AulaRepository;
+import com.example.backend.repository.ContratoRepository;
 import com.example.backend.repository.FrequenciaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -35,6 +37,9 @@ public class FrequenciaService {
 
     @Autowired
     private AcessoPedagogicoService acessoPedagogico;
+
+    @Autowired
+    private ContratoRepository contratoRepo;
 
     @Transactional
     public Frequencia registrarFrequencia(Frequencia frequencia) {
@@ -82,6 +87,13 @@ public class FrequenciaService {
         acessoPedagogico.validarLancamentoNaTurma(aulaReal.getTurma());
         Aluno alunoReal = alunoRepo.findById(frequencia.getAluno().getId_aluno())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Aluno não encontrado."));
+
+        // Chamada só de quem está matriculado na turma (ativo, ou concluído numa correção do diretor)
+        Turma turma = aulaReal.getTurma();
+        if (turma != null && contratoRepo.contarMatriculaParaLancamento(turma.getId_turma(), alunoReal.getId_aluno()) == 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    alunoReal.getNome() + " não tem matrícula ativa na turma " + turma.getCodigoTurma() + ".");
+        }
 
         frequencia.setAula(aulaReal);
         frequencia.setAluno(alunoReal);

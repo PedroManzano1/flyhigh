@@ -1,6 +1,7 @@
 package com.example.backend.controller;
 
 import com.example.backend.model.Aula;
+import com.example.backend.service.AcessoPedagogicoService;
 import com.example.backend.service.AulaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +18,9 @@ public class AulaController {
     @Autowired
     private AulaService service;
 
+    @Autowired
+    private AcessoPedagogicoService acesso;
+
     @PreAuthorize("hasRole('DIRETOR') or hasAuthority('FREQUENCIAS_WRITE')")
     @PostMapping
     public Aula create(@RequestBody Aula aula) {
@@ -26,13 +30,17 @@ public class AulaController {
     @PreAuthorize("hasRole('DIRETOR') or hasAuthority('FREQUENCIAS_READ')")
     @GetMapping
     public List<Aula> getAll() {
-        return service.listarTodos();
+        return acesso.filtrarPorTurma(service.listarTodos(), Aula::getTurma);
     }
 
     @PreAuthorize("hasRole('DIRETOR') or hasAuthority('FREQUENCIAS_READ')")
     @GetMapping("/{id}")
     public ResponseEntity<Aula> getById(@PathVariable Long id) {
         return service.buscarPorId(id)
+                .map(a -> {
+                    acesso.validarLeituraDaTurma(a.getTurma() != null ? a.getTurma().getId_turma() : null);
+                    return a;
+                })
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -40,6 +48,7 @@ public class AulaController {
     @PreAuthorize("hasRole('DIRETOR') or hasAuthority('FREQUENCIAS_READ')")
     @GetMapping("/turma/{idTurma}")
     public ResponseEntity<List<Aula>> getByTurma(@PathVariable Long idTurma) {
+        acesso.validarLeituraDaTurma(idTurma);
         return ResponseEntity.ok(service.buscarPorTurma(idTurma));
     }
 

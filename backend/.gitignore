@@ -31,3 +31,6 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Segredos locais (senha do banco, chave do JWT) ###
+src/main/resources/application-local.properties

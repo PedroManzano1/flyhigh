@@ -3,6 +3,7 @@ import { Suspense, useState, useEffect } from 'react';
 import { useFeedback } from '../../../../components/feedback';
 import { InputField } from '../../../../components/ui';
 import api, { mensagemErro } from '../../../../utils/api';
+import { formatarCpf } from '../../../../utils/cpf';
 import { useRouter, useSearchParams } from 'next/navigation'; 
 
 
@@ -31,7 +32,7 @@ function EditarResponsavelPageConteudo() {
           nome: resp.nome || '',
           dataNascimento: resp.dataNascimento || '',
           rg: resp.rg || '',
-          cpf: resp.cpf || '',
+          cpf: formatarCpf(resp.cpf || ''),
           telefonePrincipal: resp.telefonePrincipal || '',
           telefoneSecundario: resp.telefoneSecundario || '',
           nomeConjuge: resp.nomeConjuge || '',
@@ -51,7 +52,7 @@ function EditarResponsavelPageConteudo() {
     carregarResponsavel();
   }, [id, router]);
 
-  const handleChange = (e) => { setFormData({ ...formData, [e.target.name]: e.target.value }); };
+  const handleChange = (e) => { setFormData({ ...formData, [e.target.name]: e.target.name === 'cpf' ? formatarCpf(e.target.value) : e.target.value }); };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -95,7 +96,7 @@ function EditarResponsavelPageConteudo() {
           <InputField label="Nome Completo" name="nome" onChange={handleChange} value={formData.nome} />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <InputField label="Nascimento" name="dataNascimento" type="date" onChange={handleChange} value={formData.dataNascimento} />
-            <InputField label="CPF" name="cpf" onChange={handleChange} value={formData.cpf} />
+            <InputField label="CPF" name="cpf" placeholder="000.000.000-00" inputMode="numeric" onChange={handleChange} value={formData.cpf} />
           </div>
           <InputField label="RG" name="rg" onChange={handleChange} value={formData.rg} />
 

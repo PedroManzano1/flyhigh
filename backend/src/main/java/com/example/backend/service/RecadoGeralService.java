@@ -23,23 +23,27 @@ public class RecadoGeralService {
     @Autowired
     private UsuarioRepository usuarioRepo;
 
+    /** Recado novo: o autor é sempre quem está logado, ignorando o que veio da tela. */
     public RecadoGeral salvar(RecadoGeral recado) {
-        // Define a data de publicação caso não venha preenchida
+        // Um id no corpo sobrescreveria um recado existente
+        recado.setId_recado(null);
         if (recado.getDataPublicacao() == null) {
             recado.setDataPublicacao(LocalDate.now());
         }
+        recado.setUsuarioAutor(usuarioLogado());
+        return recadoRepo.save(recado);
+    }
 
-        // Pega o login (sub) do usuário que fez a requisição diretamente do Token validado pelo Spring Security
-        String loginUsuarioLogado = SecurityContextHolder.getContext().getAuthentication().getName();
+    private Usuario usuarioLogado() {
+        String login = SecurityContextHolder.getContext().getAuthentication().getName();
+        return usuarioRepo.findByLogin(login)
+                .orElseThrow(() -> new RuntimeException("Usuário logado (" + login + ") não encontrado."));
+    }
 
-        // Busca esse usuário no banco de dados
-        Usuario autorExistente = usuarioRepo.findByLogin(loginUsuarioLogado)
-                .orElseThrow(() -> new RuntimeException("Erro: Usuário logado (" + loginUsuarioLogado + ") não encontrado no banco de dados."));
-
-        // Injeta o autor real no recado, ignorando qualquer coisa que o Frontend tenha mandado
-        recado.setUsuarioAutor(autorExistente);
-
-        // Salva o recado vinculado ao autor correto!
+    /** Edição: o autor continua sendo quem publicou, não quem corrigiu o texto. */
+    public RecadoGeral atualizar(RecadoGeral recado, Usuario autorOriginal) {
+        if (recado.getDataPublicacao() == null) recado.setDataPublicacao(LocalDate.now());
+        recado.setUsuarioAutor(autorOriginal != null ? autorOriginal : usuarioLogado());
         return recadoRepo.save(recado);
     }
 
@@ -55,6 +59,17 @@ public class RecadoGeralService {
         );
 
         return recados;
+    }
+
+    /** Mural de quem não é da equipe: já publicados e ainda não expirados. */
+    public List<RecadoGeral> listarVisiveis(LocalDate hoje) {
+        List<RecadoGeral> visiveis = new ArrayList<>();
+        for (RecadoGeral r : listarTodos()) {
+            boolean publicado = r.getDataPublicacao() == null || !r.getDataPublicacao().isAfter(hoje);
+            boolean vigente = r.getDataExpiracao() == null || !r.getDataExpiracao().isBefore(hoje);
+            if (publicado && vigente) visiveis.add(r);
+        }
+        return visiveis;
     }
 
     public Optional<RecadoGeral> buscarPorId(Long id) {

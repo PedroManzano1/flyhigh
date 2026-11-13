@@ -144,7 +144,12 @@ function EditarTurmaPageConteudo() {
               <option value="Aberta">🟢 Aberta (Matrículas)</option>
               <option value="Em Andamento">🟡 Em Andamento</option>
               <option value="Fechada">🔴 Fechada</option>
+              {/* Concluída só pelo botão Encerrar; aqui aparece para a turma que já foi encerrada */}
+              {formData.status === 'Concluída' && <option value="Concluída">🏁 Concluída (encerrada)</option>}
             </SelectField>
+            {formData.status === 'Concluída' && (
+              <p className="text-xs font-bold text-zinc-500 -mt-4">Turma encerrada. Só o diretor pode reabri-la.</p>
+            )}
             
             <SelectField label="Professor Responsável" name="idProfessor" onChange={handleChange} value={formData.idProfessor}>
               <option value="">Selecione o Professor...</option>

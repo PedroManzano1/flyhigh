@@ -6,6 +6,7 @@ import com.example.backend.model.Usuario;
 import com.example.backend.repository.PerfilRepository;
 import com.example.backend.repository.UsuarioRepository;
 import com.example.backend.security.JwtUtils;
+import com.example.backend.security.ProtecaoLogin;
 import com.example.backend.service.UsuarioService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -46,10 +47,17 @@ public class AuthController {
     @Autowired
     private UsuarioService usuarioService;
 
+    @Autowired
+    private ProtecaoLogin protecaoLogin;
+
     @PostMapping("/login")
     public ResponseEntity<?> efetuarLogin(@RequestBody Map<String, String> dadosLogin) {
+        String loginDigitado = dadosLogin.get("login");
+        long minutos = protecaoLogin.minutosBloqueado(loginDigitado);
+        if (minutos > 0) {
+            return ResponseEntity.status(429).body(mensagemBloqueio(minutos));
+        }
         try {
-            String loginDigitado = dadosLogin.get("login");
             String senhaDigitada = dadosLogin.get("senha");
 
             UsernamePasswordAuthenticationToken authToken =
@@ -59,22 +67,38 @@ public class AuthController {
 
             Usuario usuarioLogado = (Usuario) authentication.getPrincipal();
             String token = jwtUtils.generateToken(usuarioLogado);
+            protecaoLogin.registrarSucesso(loginDigitado);
 
             Map<String, String> resposta = new HashMap<>();
             resposta.put("token", token);
 
             return ResponseEntity.ok(resposta);
         } catch (LockedException | DisabledException e) {
-            return contaSemAcesso(dadosLogin.get("login"), dadosLogin.get("senha"));
+            // Conta pendente ou inativa: só explica o motivo para quem acertou a senha
+            ResponseEntity<?> resposta = contaSemAcesso(loginDigitado, dadosLogin.get("senha"));
+            return resposta != null ? resposta : senhaErrada(loginDigitado);
         } catch (Exception e) {
-            return ResponseEntity.status(401).body("Falha na autenticação: Login ou senha incorretos.");
+            return senhaErrada(loginDigitado);
         }
+    }
+
+    private ResponseEntity<?> senhaErrada(String login) {
+        if (protecaoLogin.registrarFalha(login)) {
+            return ResponseEntity.status(429).body(mensagemBloqueio(protecaoLogin.minutosBloqueado(login)));
+        }
+        return ResponseEntity.status(401).body("Falha na autenticação: Login ou senha incorretos.");
+    }
+
+    private static String mensagemBloqueio(long minutos) {
+        return "Muitas tentativas com senha errada. Este login fica bloqueado por "
+                + minutos + (minutos == 1 ? " minuto." : " minutos.");
     }
 
     /**
      * O Spring recusa conta bloqueada antes de conferir a senha. Só explicamos o motivo
      * (cadastro aguardando aprovação ou acesso inativo) para quem acertou a senha,
-     * para não revelar a terceiros quais logins existem.
+     * para não revelar a terceiros quais logins existem. Senha errada devolve nulo
+     * e conta como tentativa errada.
      */
     private ResponseEntity<?> contaSemAcesso(String login, String senha) {
         return usuarioRepository.findByLogin(login)
@@ -83,7 +107,7 @@ public class AuthController {
                         UsuarioService.PENDENTE.equalsIgnoreCase(u.getStatus())
                                 ? "Seu cadastro foi recebido e está aguardando a liberação da secretaria."
                                 : "Seu acesso está inativo. Procure a secretaria da escola."))
-                .orElseGet(() -> ResponseEntity.status(401).body("Falha na autenticação: Login ou senha incorretos."));
+                .orElse(null);
     }
 
     // Tela pública "Criar conta": o aluno se cadastra e aguarda a secretaria ligar a conta a ele
@@ -92,6 +116,25 @@ public class AuthController {
         usuarioService.cadastrarAluno(dados);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body("Cadastro enviado! Assim que a secretaria liberar, você já pode entrar com o seu login.");
+    }
+
+    /**
+     * Dados e permissões atuais de quem está logado. O frontend chama ao abrir o
+     * sistema para o menu refletir o perfil de agora, e não o que estava no token
+     * quando a pessoa entrou. Conta inativada nem chega aqui (401 no JwtFilter).
+     */
+    @GetMapping("/eu")
+    public ResponseEntity<?> quemSouEu(Authentication autenticacao) {
+        return usuarioRepository.findByLogin(autenticacao.getName())
+                .<ResponseEntity<?>>map(u -> {
+                    Map<String, Object> dados = new HashMap<>();
+                    dados.put("login", u.getLogin());
+                    dados.put("nome", u.getNome());
+                    dados.put("idUsuario", u.getIdUsuario());
+                    dados.put("permissoes", u.getAuthorities().stream().map(a -> a.getAuthority()).toList());
+                    return ResponseEntity.ok(dados);
+                })
+                .orElseGet(() -> ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
     }
 
     @GetMapping("/tem-usuarios")
@@ -107,6 +150,13 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body("Acesso negado: O sistema já possui usuários cadastrados.");
         }
+        if (dados.get("login") == null || dados.get("login").isBlank()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Informe o login do diretor.");
+        }
+        if (dados.get("senha") == null || dados.get("senha").length() < UsuarioService.SENHA_MINIMA) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("A senha precisa ter pelo menos " + UsuarioService.SENHA_MINIMA + " caracteres.");
+        }
 
         Perfil perfilDiretor = perfilRepository.findByNomePerfilIgnoreCase("DIRETOR").stream()
                 .findFirst().orElseGet(() -> {
@@ -115,7 +165,7 @@ public class AuthController {
             novoPerfil.setDescricao("Acesso total e irrestrito ao sistema");
 
             String[] modulos = {"ALUNOS", "RESPONSAVEIS", "VINCULOS", "CURSOS", "TURMAS", "CONTRATOS",
-                    "FINANCEIRO", "INADIMPLENCIA", "FREQUENCIAS", "AVALIACOES", "BOLETIM", "RECADOS",
+                    "MODELOS_CONTRATO", "FINANCEIRO", "INADIMPLENCIA", "FREQUENCIAS", "AVALIACOES", "BOLETIM", "RECADOS",
                     "USUARIOS", "PERFIS"};
             List<Permissao> permissoes = new ArrayList<>();
 
@@ -144,4 +194,4 @@ public class AuthController {
 
         return ResponseEntity.status(HttpStatus.CREATED).body("Diretor criado com sucesso!");
     }
-}
+}

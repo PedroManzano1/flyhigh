@@ -2,16 +2,19 @@
 import { useState, useEffect, useContext, useMemo } from 'react';
 import { SelectField } from '../../../components/ui';
 import api, { mensagemErro } from '../../../utils/api';
-import { formatarNumero } from '../../../utils/formato';
+import { formatarNumero, formatarData } from '../../../utils/formato';
 import { rotuloModelo } from '../../../utils/notas';
 import { useRouter } from 'next/navigation';
 import { AuthContext } from '../../../context/authContext';
+import { turmasLiberadas } from '../../../utils/permissoes';
 
 
 const ESTILO_SITUACAO = {
   APROVADO: { rotulo: 'Aprovado', classe: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
   REPROVADO: { rotulo: 'Reprovado', classe: 'bg-red-600 text-white border-red-600' },
   CURSANDO: { rotulo: 'Cursando', classe: 'bg-blue-50 text-blue-700 border-blue-200' },
+  // Antes do encerramento ninguém é reprovado: quem está abaixo aparece em risco
+  EM_RISCO: { rotulo: 'Em risco', classe: 'bg-amber-100 text-amber-800 border-amber-300' },
   SEM_LANCAMENTOS: { rotulo: 'Sem lançamentos', classe: 'bg-zinc-100 text-zinc-500 border-zinc-200' }
 };
 
@@ -34,7 +37,7 @@ export default function BoletimPage() {
       setLoading(true);
       try {
         const res = await api.get('/api/turmas');
-        setTurmas(Array.isArray(res.data) ? res.data : []);
+        setTurmas(turmasLiberadas(res.data, user));
         setErro(null);
       } catch (err) {
         setErro("Erro de conexão com o servidor Fly High.");
@@ -43,7 +46,7 @@ export default function BoletimPage() {
       }
     };
     carregarTurmas();
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     if (!user?.idUsuario || turmas.length === 0) return;
@@ -90,7 +93,8 @@ export default function BoletimPage() {
   const contagem = useMemo(() => ({
     aprovados: alunos.filter(a => a.situacao === 'APROVADO').length,
     reprovados: alunos.filter(a => a.situacao === 'REPROVADO').length,
-    cursando: alunos.filter(a => a.situacao === 'CURSANDO').length
+    cursando: alunos.filter(a => a.situacao === 'CURSANDO').length,
+    emRisco: alunos.filter(a => a.situacao === 'EM_RISCO').length
   }), [alunos]);
 
   const imprimir = () => window.print();
@@ -226,12 +230,14 @@ export default function BoletimPage() {
           <div>
             <h2 className="font-black text-2xl uppercase mb-4 italic">Panorama Final</h2>
             <p className="font-bold text-zinc-400 text-sm leading-relaxed">
-              A reprovação por frequência é imediata. Por nota, o aluno é reprovado quando fecha abaixo de {formatarNumero(notaMinima, 0)}
-              ou quando, mesmo tirando o máximo no que falta, já não consegue chegar lá.
+              {boletim?.encerrada
+                ? <>Turma encerrada{boletim.dataEncerramento ? ` em ${formatarData(boletim.dataEncerramento)}` : ''}: este é o resultado final.</>
+                : <>O resultado (aprovado ou reprovado) só sai quando a turma for encerrada. Até lá, quem está com
+                  frequência abaixo do mínimo ou não consegue mais chegar a {formatarNumero(notaMinima, 0)} aparece <strong className="text-amber-300">Em risco</strong>.</>}
             </p>
           </div>
 
-          <div className="grid grid-cols-3 gap-3 mt-8">
+          <div className="grid grid-cols-2 gap-3 mt-8">
             <div className="bg-emerald-500/20 border border-emerald-500/30 rounded-2xl p-4 text-center">
               <div className="text-3xl font-black text-emerald-400">{contagem.aprovados}</div>
               <div className="text-[10px] font-black uppercase tracking-widest mt-1 text-emerald-200">Aprovados</div>
@@ -243,6 +249,10 @@ export default function BoletimPage() {
             <div className="bg-blue-500/20 border border-blue-500/30 rounded-2xl p-4 text-center">
               <div className="text-3xl font-black text-blue-300">{contagem.cursando}</div>
               <div className="text-[10px] font-black uppercase tracking-widest mt-1 text-blue-200">Cursando</div>
+            </div>
+            <div className="bg-amber-500/20 border border-amber-500/30 rounded-2xl p-4 text-center">
+              <div className="text-3xl font-black text-amber-300">{contagem.emRisco}</div>
+              <div className="text-[10px] font-black uppercase tracking-widest mt-1 text-amber-200">Em risco</div>
             </div>
           </div>
         </div>
@@ -313,7 +323,7 @@ export default function BoletimPage() {
                       {aluno.notaFinal === null || aluno.notaFinal === undefined ? (
                         <span className="text-zinc-300 font-mono font-black">---</span>
                       ) : (
-                        <span className={`font-mono font-black text-2xl ${aluno.notaFinal >= notaMinima ? 'text-emerald-600' : 'text-red-600'}`}>
+                        <span className={`font-mono font-black text-2xl ${(aluno.notaFinalArredondada ?? aluno.notaFinal) >= notaMinima ? 'text-emerald-600' : 'text-red-600'}`}>
                           {formatarNumero(aluno.notaFinalArredondada ?? aluno.notaFinal, 1)}
                         </span>
                       )}

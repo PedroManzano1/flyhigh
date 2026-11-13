@@ -5,6 +5,7 @@ import { InputField, SelectField, TextareaField } from '../../../components/ui';
 import api, { mensagemErro } from '../../../utils/api';
 import { useRouter } from 'next/navigation';
 import { AuthContext } from '../../../context/authContext';
+import { turmasLiberadas } from '../../../utils/permissoes';
 
 
 // Data de hoje no fuso local (toISOString devolveria a data em UTC,
@@ -47,7 +48,7 @@ export default function FaltasPage() {
       setLoading(true);
       try {
         const res = await api.get('/api/turmas');
-        setTurmas(Array.isArray(res.data) ? res.data : []);
+        setTurmas(turmasLiberadas(res.data, user));
         setErro(null);
       } catch (err) {
         setErro("Erro de conexão com o servidor Fly High.");
@@ -56,7 +57,7 @@ export default function FaltasPage() {
       }
     };
     carregarTurmas();
-  }, []);
+  }, [user]);
 
   // Se o usuário logado é professor de alguma turma, o padrão é mostrar só as dele (Estória 9)
   useEffect(() => {

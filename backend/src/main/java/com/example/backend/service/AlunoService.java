@@ -48,9 +48,14 @@ public class AlunoService {
                     "A data de nascimento não pode ser uma data futura.");
         }
 
-        Endereco anterior = aluno.getId_aluno() == null
+        Aluno existente = aluno.getId_aluno() == null
                 ? null
-                : alunoRepo.findById(aluno.getId_aluno()).map(Aluno::getEndereco).orElse(null);
+                : alunoRepo.findById(aluno.getId_aluno()).orElse(null);
+        Endereco anterior = existente != null ? existente.getEndereco() : null;
+
+        aluno.setCpf(Cpf.normalizar(aluno.getCpf()));
+        validarCpfLivre(aluno);
+        definirMatricula(aluno, existente);
 
         aluno.setEndereco(enderecoService.resolver(aluno.getEndereco(), anterior));
         Aluno salvo = alunoRepo.saveAndFlush(aluno);
@@ -59,6 +64,86 @@ public class AlunoService {
             enderecoService.removerSeOrfao(anterior);
         }
         return salvo;
+    }
+
+    private void validarCpfLivre(Aluno aluno) {
+        if (aluno.getCpf() == null) return;
+        alunoRepo.findByCpfSomenteNumeros(Cpf.somenteNumeros(aluno.getCpf())).stream()
+                .filter(outro -> !outro.getId_aluno().equals(aluno.getId_aluno()))
+                .findFirst()
+                .ifPresent(outro -> {
+                    throw new ResponseStatusException(HttpStatus.CONFLICT,
+                            "Este CPF já está no cadastro do aluno " + outro.getNome()
+                                    + " (matrícula " + outro.getNumeroMatricula() + ").");
+                });
+    }
+
+    /**
+     * Matrícula em branco: no cadastro novo o sistema gera a próxima (2026-0042);
+     * na edição o aluno mantém a que já tinha.
+     */
+    private void definirMatricula(Aluno aluno, Aluno existente) {
+        String informada = aluno.getNumeroMatricula() == null ? "" : aluno.getNumeroMatricula().trim();
+        if (informada.isEmpty() && existente != null && existente.getNumeroMatricula() != null
+                && !existente.getNumeroMatricula().isBlank()) {
+            informada = existente.getNumeroMatricula().trim();
+        }
+        if (informada.isEmpty()) {
+            informada = proximaMatricula();
+        }
+        String matricula = informada;
+        alunoRepo.findByNumeroMatricula(matricula)
+                .filter(outro -> !outro.getId_aluno().equals(aluno.getId_aluno()))
+                .ifPresent(outro -> {
+                    throw new ResponseStatusException(HttpStatus.CONFLICT,
+                            "A matrícula " + matricula + " já é do aluno " + outro.getNome() + ".");
+                });
+        aluno.setNumeroMatricula(matricula);
+    }
+
+    /** Ano atual + sequência de 4 dígitos, continuando da maior já usada no ano. */
+    String proximaMatricula() {
+        String prefixo = LocalDate.now().getYear() + "-";
+        int maior = 0;
+        for (String usada : alunoRepo.matriculasComPrefixo(prefixo + "%")) {
+            String resto = usada.substring(prefixo.length());
+            if (resto.matches("\\d+")) {
+                maior = Math.max(maior, Integer.parseInt(resto));
+            }
+        }
+        return prefixo + String.format("%04d", maior + 1);
+    }
+
+    /**
+     * Corrige cadastros antigos, gravados antes desta regra: CPF vazio vira nulo,
+     * CPF preenchido vai para o formato único e matrícula vazia ganha um número.
+     */
+    @Transactional
+    public int corrigirCadastrosAntigos() {
+        int corrigidos = alunoRepo.limparCpfVazio();
+        for (Aluno aluno : alunoRepo.findAll()) {
+            boolean mudou = false;
+            // Só reformata quando ninguém mais tem o mesmo CPF; duplicados antigos ficam
+            // como estão para a secretaria resolver, em vez de derrubar a correção inteira
+            String numeros = Cpf.somenteNumeros(aluno.getCpf());
+            if (aluno.getCpf() != null && numeros.length() == 11
+                    && alunoRepo.findByCpfSomenteNumeros(numeros).size() == 1) {
+                String formatado = Cpf.normalizar(aluno.getCpf());
+                if (!formatado.equals(aluno.getCpf())) {
+                    aluno.setCpf(formatado);
+                    mudou = true;
+                }
+            }
+            if (aluno.getNumeroMatricula() == null || aluno.getNumeroMatricula().isBlank()) {
+                aluno.setNumeroMatricula(proximaMatricula());
+                mudou = true;
+            }
+            if (mudou) {
+                alunoRepo.saveAndFlush(aluno);
+                corrigidos++;
+            }
+        }
+        return corrigidos;
     }
 
     public List<Aluno> listarTodos() {

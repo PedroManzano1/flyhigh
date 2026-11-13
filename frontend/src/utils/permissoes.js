@@ -10,6 +10,7 @@ export const MODULOS_PERMISSAO = [
   { modulo: 'CURSOS', rotulo: '📚 Cursos' },
   { modulo: 'TURMAS', rotulo: '🗓️ Turmas' },
   { modulo: 'CONTRATOS', rotulo: '📄 Contratos (matrículas)' },
+  { modulo: 'MODELOS_CONTRATO', rotulo: '📝 Modelos de contrato (texto das cláusulas)' },
   { modulo: 'FINANCEIRO', rotulo: '💰 Financeiro (baixa de parcelas)' },
   { modulo: 'INADIMPLENCIA', rotulo: '🚨 Inadimplência', somenteLeitura: true },
   { modulo: 'FREQUENCIAS', rotulo: '📋 Faltas (frequência)' },
@@ -36,4 +37,13 @@ export const PERFIL_ALUNO = 'ALUNO';
 export function ehContaDeAluno(usuario) {
   return (usuario?.perfil?.nomePerfil || '').toUpperCase() === PERFIL_ALUNO
     || (usuario?.status || '').toUpperCase() === 'PENDENTE';
+}
+
+// Quem é professor de alguma turma só vê as próprias turmas no diário, nas notas e
+// no boletim (o backend recusa as outras). Diretor e quem não dá aula veem todas.
+export function turmasLiberadas(turmas, user) {
+  const lista = Array.isArray(turmas) ? turmas : [];
+  if (!user || user.permissoes?.includes('ROLE_DIRETOR') || !user.idUsuario) return lista;
+  const minhas = lista.filter(t => t.professor?.idUsuario === user.idUsuario);
+  return minhas.length > 0 ? minhas : lista;
 }

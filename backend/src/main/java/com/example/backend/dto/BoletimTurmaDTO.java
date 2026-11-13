@@ -17,6 +17,9 @@ public class BoletimTurmaDTO {
     private String curso;
     private String professor;
     private String semestreAno;
+    // Turma encerrada: só então a situação vira Aprovado/Reprovado
+    private boolean encerrada;
+    private LocalDate dataEncerramento;
 
     private int totalAulas;
     private int totalAvaliacoes;

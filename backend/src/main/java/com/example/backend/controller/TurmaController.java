@@ -46,6 +46,13 @@ public class TurmaController {
         }).orElse(ResponseEntity.notFound().build());
     }
 
+    // Fim do semestre: conclui as matrículas ativas e trava o diário da turma
+    @PreAuthorize("hasRole('DIRETOR') or hasAuthority('TURMAS_WRITE')")
+    @PostMapping("/{id}/encerrar")
+    public Turma encerrar(@PathVariable Long id) {
+        return service.encerrar(id);
+    }
+
     @PreAuthorize("hasRole('DIRETOR') or hasAuthority('TURMAS_DELETE')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {

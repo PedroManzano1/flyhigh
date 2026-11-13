@@ -20,6 +20,8 @@ import java.text.Normalizer;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -89,12 +91,16 @@ public class FinanceiroService {
 
         for (LancamentoFinanceiro p : parcelas) {
             double valor = p.getValor() != null ? p.getValor() : 0;
+            String status = p.statusEm(hoje);
+
+            // Parcela de matrícula trancada ou cancelada não é mais esperada
+            if (LancamentoFinanceiro.CANCELADA.equals(status)) continue;
 
             if (p.getDataVencimento() != null && YearMonth.from(p.getDataVencimento()).equals(mesAtual)) {
                 previstoMes += valor;
             }
 
-            switch (p.statusEm(hoje)) {
+            switch (status) {
                 case LancamentoFinanceiro.PAGA -> {
                     if (p.getDataPagamento() != null && YearMonth.from(p.getDataPagamento()).equals(mesAtual)) {
                         recebidoMes += valor;
@@ -142,6 +148,7 @@ public class FinanceiroService {
                     ? " (baixa em " + parcela.getDataPagamento().format(DATA_BR) + ")" : "";
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Esta parcela já está paga" + quando + ".");
         }
+        exigirNaoCancelada(parcela, "baixada");
         if (baixa == null || baixa.getDataPagamento() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Informe a data em que o pagamento foi recebido.");
         }
@@ -189,6 +196,7 @@ public class FinanceiroService {
     public ParcelaFinanceiraDTO ajustar(Long id, AjusteParcelaDTO ajuste) {
         LancamentoFinanceiro parcela = buscar(id);
         exigirEmAberto(parcela, "alterada");
+        exigirNaoCancelada(parcela, "alterada");
 
         if (ajuste == null || (ajuste.getValor() == null && ajuste.getDataVencimento() == null)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Informe o novo valor ou o novo vencimento.");
@@ -223,6 +231,24 @@ public class FinanceiroService {
                 parcela.getContrato() != null ? parcela.getContrato().getIdContrato() : null, usuarioLogado());
 
         lancamentoRepo.delete(parcela);
+        renumerar(parcela);
+    }
+
+    /** Depois de excluir, as parcelas que sobram voltam a ser 1/N, 2/N... em ordem de vencimento. */
+    private void renumerar(LancamentoFinanceiro excluida) {
+        if (excluida.getContrato() == null) return;
+        List<LancamentoFinanceiro> restantes = new ArrayList<>(lancamentoRepo.findByContratoIdETipo(
+                excluida.getContrato().getIdContrato(), excluida.getTipo()));
+        restantes.removeIf(p -> p.getIdLancamento().equals(excluida.getIdLancamento()));
+        restantes.sort(Comparator.comparing(LancamentoFinanceiro::getDataVencimento,
+                        Comparator.nullsLast(Comparator.naturalOrder()))
+                .thenComparing(LancamentoFinanceiro::getIdLancamento));
+        int numero = 1;
+        for (LancamentoFinanceiro p : restantes) {
+            p.setNumeroParcela(numero++);
+            p.setTotalParcelas(restantes.size());
+        }
+        if (!restantes.isEmpty()) lancamentoRepo.saveAll(restantes);
     }
 
     // --- Utilitários ---------------------------------------------------------
@@ -239,9 +265,19 @@ public class FinanceiroService {
         }
     }
 
+    private void exigirNaoCancelada(LancamentoFinanceiro parcela, String acao) {
+        if (parcela.estaCancelada()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Esta parcela foi cancelada porque a matrícula está trancada ou cancelada, e não pode ser "
+                            + acao + ". Reative a matrícula no contrato para ela voltar a valer.");
+        }
+    }
+
     static boolean statusConfere(String status, String filtro) {
         if (filtro == null) return true;
-        if (EM_ABERTO.equals(filtro)) return !LancamentoFinanceiro.PAGA.equals(status);
+        if (EM_ABERTO.equals(filtro)) {
+            return LancamentoFinanceiro.PENDENTE.equals(status) || LancamentoFinanceiro.ATRASADA.equals(status);
+        }
         return filtro.equals(status);
     }
 

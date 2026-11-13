@@ -1,6 +1,7 @@
 package com.example.backend.controller;
 
 import com.example.backend.model.Avaliacao;
+import com.example.backend.service.AcessoPedagogicoService;
 import com.example.backend.service.AvaliacaoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +17,9 @@ public class AvaliacaoController {
 
     @Autowired
     private AvaliacaoService service;
+
+    @Autowired
+    private AcessoPedagogicoService acesso;
 
     @PreAuthorize("hasRole('DIRETOR') or hasAuthority('AVALIACOES_WRITE')")
     @PostMapping
@@ -33,13 +37,17 @@ public class AvaliacaoController {
     @PreAuthorize("hasRole('DIRETOR') or hasAuthority('AVALIACOES_READ')")
     @GetMapping
     public List<Avaliacao> getAll() {
-        return service.listarTodos();
+        return acesso.filtrarPorTurma(service.listarTodos(), Avaliacao::getTurma);
     }
 
     @PreAuthorize("hasRole('DIRETOR') or hasAuthority('AVALIACOES_READ')")
     @GetMapping("/{id}")
     public ResponseEntity<Avaliacao> getById(@PathVariable Long id) {
         return service.buscarPorId(id)
+                .map(a -> {
+                    acesso.validarLeituraDaTurma(a.getTurma() != null ? a.getTurma().getId_turma() : null);
+                    return a;
+                })
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -47,6 +55,7 @@ public class AvaliacaoController {
     @PreAuthorize("hasRole('DIRETOR') or hasAuthority('AVALIACOES_READ')")
     @GetMapping("/turma/{idTurma}")
     public ResponseEntity<List<Avaliacao>> getByTurma(@PathVariable Long idTurma) {
+        acesso.validarLeituraDaTurma(idTurma);
         return ResponseEntity.ok(service.buscarPorTurma(idTurma));
     }
 
@@ -68,4 +77,4 @@ public class AvaliacaoController {
         }
         return ResponseEntity.notFound().build();
     }
-}
+}

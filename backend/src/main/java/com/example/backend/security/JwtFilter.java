@@ -4,51 +4,48 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import com.example.backend.model.Usuario;
+import com.example.backend.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.List;
 
+/**
+ * Lê o token de cada requisição e confere a conta no banco.
+ *
+ * O token sozinho valia por 24 h mesmo depois de a conta ser inativada, e as
+ * permissões gravadas nele não mudavam quando o perfil era alterado. Agora a
+ * conta precisa estar ATIVO e as permissões vêm do perfil atual: inativar ou
+ * mudar o perfil vale já na próxima requisição.
+ */
 @Component
 public class JwtFilter extends OncePerRequestFilter {
 
     @Autowired
     private JwtUtils jwtUtils;
 
+    @Autowired
+    private UsuarioRepository usuarioRepository;
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
-        // 1. Procura o cabeçalho "Authorization" na requisição que veio do React
+        // Padrão da web: "Authorization: Bearer eyJhbGciOi..."
         String header = request.getHeader("Authorization");
-        String token = null;
+        String token = header != null && header.startsWith("Bearer ") ? header.substring(7) : null;
 
-        // O padrão da web é enviar o token assim: "Bearer eyJhbGciOi..."
-        if (header != null && header.startsWith("Bearer ")) {
-            token = header.substring(7); // Pula a palavra "Bearer " (7 letras) para pegar só o código
-        }
-
-        // 2. Se achou um token e ele não for falso/expirado, logamos o usuário internamente no Spring
         if (token != null && jwtUtils.isTokenValid(token)) {
-            String login = jwtUtils.getLoginUsuario(token);
-
-            // pegamos as permissões direto do token, sem fazer um "SELECT" no banco de dados
-            List<SimpleGrantedAuthority> authorities = jwtUtils.getAuthorities(token);
-
-            // Cria o "crachá de acesso" temporário para esta requisição
-            UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(login, null, authorities);
-
-            // Coloca o crachá no pescoço do sistema
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+            usuarioRepository.findByLogin(jwtUtils.getLoginUsuario(token))
+                    .filter(Usuario::isEnabled)
+                    .ifPresent(usuario -> SecurityContextHolder.getContext().setAuthentication(
+                            new UsernamePasswordAuthenticationToken(usuario.getLogin(), null, usuario.getAuthorities())));
         }
-
-        // 3. Manda a requisição seguir o seu caminho
+        // Sem autenticação aqui, rota protegida recebe 401 (SecurityConfig)
         filterChain.doFilter(request, response);
     }
 }

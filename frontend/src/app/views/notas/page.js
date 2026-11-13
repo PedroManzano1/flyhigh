@@ -9,6 +9,7 @@ import {
 } from '../../../utils/notas';
 import { useRouter } from 'next/navigation';
 import { AuthContext } from '../../../context/authContext';
+import { turmasLiberadas } from '../../../utils/permissoes';
 
 /**
  * Atividades avaliativas da turma. Cada atividade vale pontos e a turma soma até
@@ -44,14 +45,14 @@ export default function NotasPage() {
   const carregarTurmas = useCallback(async () => {
     try {
       const res = await api.get('/api/turmas');
-      setTurmas(Array.isArray(res.data) ? res.data : []);
+      setTurmas(turmasLiberadas(res.data, user));
       setErro(null);
     } catch (err) {
       setErro(mensagemErro(err, "Erro de conexão com o servidor Fly High."));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user]);
 
   useEffect(() => { carregarTurmas(); }, [carregarTurmas]);
 

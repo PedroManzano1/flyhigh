@@ -64,7 +64,9 @@ public class BoletimService {
         Turma turma = turmaRepo.findById(idTurma)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Turma não encontrada."));
 
-        List<Contrato> matriculas = contratoRepo.findAtivosByTurmaId(idTurma);
+        // Ativos e concluídos: depois de encerrada, a turma continua com o boletim final
+        List<Contrato> matriculas = contratoRepo.findMatriculadosByTurmaId(idTurma);
+        boolean encerrada = TurmaService.estaEncerrada(turma);
         List<Avaliacao> avaliacoes = avaliacaoRepo.findByTurmaId(idTurma);
         List<Nota> notas = notaRepo.findByTurmaId(idTurma);
         List<Aula> aulas = aulaRepo.findByTurmaId(idTurma);
@@ -97,6 +99,8 @@ public class BoletimService {
         boletim.setCurso(turma.getCurso() != null ? turma.getCurso().getNome() : null);
         boletim.setProfessor(turma.getProfessor() != null ? turma.getProfessor().getNome() : null);
         boletim.setSemestreAno(turma.getSemestreAno());
+        boletim.setEncerrada(encerrada);
+        boletim.setDataEncerramento(turma.getDataEncerramento());
         boletim.setTotalAulas(aulas.size());
         boletim.setTotalAvaliacoes(avaliacoes.size());
         boletim.setTotalAlunos(matriculas.size());
@@ -129,7 +133,7 @@ public class BoletimService {
             if (aluno == null) continue;
             BoletimAlunoDTO linha = montarLinha(aluno, avaliacoes, notaPorChave, historicoPorAluno,
                     pontuacaoTotal, divisor);
-            definirSituacao(linha, pontosCadastrados, pontuacaoTotal);
+            definirSituacao(linha, pontosCadastrados, pontuacaoTotal, encerrada);
             boletim.getAlunos().add(linha);
         }
 
@@ -217,14 +221,24 @@ public class BoletimService {
         return linha;
     }
 
-    private void definirSituacao(BoletimAlunoDTO linha, double pontosCadastrados, double pontuacaoTotal) {
+    /**
+     * Situação do aluno. Enquanto a turma não é encerrada ninguém é aprovado nem
+     * reprovado: quem está abaixo da frequência ou da nota aparece "Em risco".
+     * O resultado final (Aprovado/Reprovado) sai quando a turma é encerrada.
+     */
+    private void definirSituacao(BoletimAlunoDTO linha, double pontosCadastrados, double pontuacaoTotal,
+                                 boolean encerrada) {
         if (linha.getAvaliacoesLancadas() == 0 && linha.getAulasRegistradas() == 0) {
             linha.setSituacao("SEM_LANCAMENTOS");
             linha.setObservacao("Nenhuma nota ou presença registrada.");
             return;
         }
 
-        boolean notaAbaixo = linha.getNotaFinal() != null && linha.getNotaFinal() < notaMinima;
+        // Decide pela nota com 1 casa, a mesma que o boletim mostra: 69,96 aparece
+        // como 70,0 e aprova; 69,94 aparece como 69,9 e reprova
+        Double notaExibida = linha.getNotaFinalArredondada() != null
+                ? linha.getNotaFinalArredondada() : linha.getNotaFinal();
+        boolean notaAbaixo = notaExibida != null && notaExibida < notaMinima;
         boolean frequenciaAbaixo = linha.getPercentualFrequencia() != null
                 && linha.getPercentualFrequencia() < frequenciaMinima;
 
@@ -232,30 +246,40 @@ public class BoletimService {
         boolean todasLancadas = linha.getTotalAvaliacoes() > 0
                 && linha.getAvaliacoesLancadas() == linha.getTotalAvaliacoes();
         boolean modeloCompleto = pontosCadastrados >= pontuacaoTotal - 0.01;
-        boolean semChance = linha.getNotaMaximaPossivel() != null && linha.getNotaMaximaPossivel() < notaMinima;
+        boolean semChance = linha.getNotaMaximaPossivel() != null
+                && arredondarUmaCasa(linha.getNotaMaximaPossivel()) < notaMinima;
+        String freq = "Frequência abaixo de " + formatar(frequenciaMinima) + "%.";
+        String nota = "Nota final abaixo de " + formatar(notaMinima) + ".";
 
-        if (frequenciaAbaixo) {
-            linha.setSituacao("REPROVADO");
-            linha.setObservacao("Frequência abaixo de " + formatar(frequenciaMinima) + "%.");
+        if (encerrada) {
+            if (frequenciaAbaixo || notaExibida == null || notaAbaixo) {
+                linha.setSituacao("REPROVADO");
+                linha.setObservacao(frequenciaAbaixo ? freq
+                        : notaExibida == null ? "Nenhuma nota lançada." : nota);
+            } else {
+                linha.setSituacao("APROVADO");
+                linha.setObservacao("Nota final e frequência dentro do exigido.");
+            }
             return;
         }
-        if (semChance) {
-            linha.setSituacao("REPROVADO");
-            linha.setObservacao(todasLancadas && modeloCompleto
-                    ? "Nota final abaixo de " + formatar(notaMinima) + "."
-                    : "Mesmo com nota máxima no que falta, não chega a " + formatar(notaMinima) + ".");
-            return;
+
+        List<String> riscos = new ArrayList<>();
+        if (frequenciaAbaixo) riscos.add(freq);
+        if (todasLancadas && modeloCompleto && notaAbaixo) {
+            riscos.add(nota);
+        } else if (semChance) {
+            riscos.add("Mesmo com nota máxima no que falta, não chega a " + formatar(notaMinima) + ".");
         }
-        if (todasLancadas && modeloCompleto) {
-            linha.setSituacao(notaAbaixo ? "REPROVADO" : "APROVADO");
-            linha.setObservacao(notaAbaixo
-                    ? "Nota final abaixo de " + formatar(notaMinima) + "."
-                    : "Nota final e frequência dentro do exigido.");
+        if (!riscos.isEmpty()) {
+            linha.setSituacao("EM_RISCO");
+            linha.setObservacao(String.join(" ", riscos) + " O resultado sai quando a turma for encerrada.");
             return;
         }
 
         linha.setSituacao("CURSANDO");
-        if (todasLancadas) {
+        if (todasLancadas && modeloCompleto) {
+            linha.setObservacao("Notas completas e dentro do exigido. O resultado sai quando a turma for encerrada.");
+        } else if (todasLancadas) {
             linha.setObservacao("As atividades cadastradas somam " + formatar(pontosCadastrados)
                     + " de " + formatar(pontuacaoTotal) + " pontos.");
         } else {

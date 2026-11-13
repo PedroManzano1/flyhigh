@@ -1,19 +1,15 @@
 "use client";
 import { useState, useEffect, useContext } from 'react';
 import { useFeedback } from '../../../components/feedback';
-import { InputField, SelectField } from '../../../components/ui';
+import { InputField, SelectField, LinhaErro } from '../../../components/ui';
 import api, { mensagemErro } from '../../../utils/api';
+import { formatarCpf } from '../../../utils/cpf';
 import { useRouter } from 'next/navigation'; 
 import { AuthContext } from '../../../context/authContext'; 
+import { ANOS_ESCOLARES } from '../../../utils/alunos';
+import { formatarData } from '../../../utils/formato';
 
 
-const ANOS_ESCOLARES = [
-  "Educação Infantil",
-  "1º Ano Fundamental", "2º Ano Fundamental", "3º Ano Fundamental", "4º Ano Fundamental", "5º Ano Fundamental",
-  "6º Ano Fundamental", "7º Ano Fundamental", "8º Ano Fundamental", "9º Ano Fundamental",
-  "1º Ano Médio", "2º Ano Médio", "3º Ano Médio",
-  "Ensino Superior", "Concluído / Não estudante"
-];
 
 export default function AlunosPage() {
   const router = useRouter();
@@ -21,22 +17,38 @@ export default function AlunosPage() {
   const { user, temPermissao } = useContext(AuthContext);
   const [alunos, setAlunos] = useState([]);
   const [loading, setLoading] = useState(true);
+  // Sem isso, uma falha ao carregar aparecia como "nenhum aluno", como se o cadastro estivesse vazio
+  const [erroCarregar, setErroCarregar] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const estadoInicial = { nome: '', numeroMatricula: '', dataNascimento: '', rg: '', cpf: '', cep: '', logradouro: '', numero: '', complemento: '', bairro: '', cidade: '', telefonePrincipal: '', telefoneSecundario: '', anoEscolar: '' };
   const [formData, setFormData] = useState(estadoInicial);
 
+  const [ultimaVirada, setUltimaVirada] = useState(null);
+
   const carregarAlunos = async () => {
     setLoading(true);
-    try { const res = await api.get('/api/alunos'); setAlunos(res.data); } catch (err) { console.error(err); } finally { setLoading(false); }
+    try {
+      const res = await api.get('/api/alunos');
+      setAlunos(Array.isArray(res.data) ? res.data : []);
+      setErroCarregar(null);
+    } catch (err) {
+      setErroCarregar(mensagemErro(err, "Não foi possível carregar os alunos."));
+    } finally { setLoading(false); }
   };
 
-  useEffect(() => { carregarAlunos(); }, []);
-  const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+  useEffect(() => {
+    carregarAlunos();
+    // Última virada automática do ano escolar, só para informar a secretaria
+    api.get('/api/alunos/ano-escolar/atualizacoes')
+      .then(res => setUltimaVirada(Array.isArray(res.data) && res.data.length > 0 ? res.data[0] : null))
+      .catch(() => setUltimaVirada(null));
+  }, []);
+  const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.name === 'cpf' ? formatarCpf(e.target.value) : e.target.value });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const payload = { ...formData, endereco: { cep: formData.cep, logradouro: formData.logradouro, numero: formData.numero, complemento: formData.complemento, bairro: formData.bairro, cidade: formData.cidade } };
-    try { await api.post('/api/alunos', payload); notificar("Aluno cadastrado!"); carregarAlunos(); setFormData(estadoInicial); } catch (err) { notificar(mensagemErro(err, "Erro ao salvar."), 'erro'); }
+    try { const res = await api.post('/api/alunos', payload); notificar(`Aluno cadastrado com a matrícula ${res.data?.numeroMatricula}.`, 'sucesso'); carregarAlunos(); setFormData(estadoInicial); } catch (err) { notificar(mensagemErro(err, "Erro ao salvar."), 'erro'); }
   };
 
   const handleExcluir = async (id) => {
@@ -53,6 +65,12 @@ export default function AlunosPage() {
         <div>
           <h1 className="text-5xl font-black uppercase tracking-tighter italic text-zinc-900">Gestão de Alunos</h1>
           <div className="h-2 w-24 bg-yellow-400 rounded-full mt-2"></div>
+          <p className="text-zinc-500 font-bold mt-3 text-sm">
+            O ano escolar avança sozinho todo 1º de janeiro.
+            {ultimaVirada && (ultimaVirada.alunosAtualizados > 0 || !ultimaVirada.observacao
+              ? ` Última virada: ${formatarData(ultimaVirada.dataExecucao)} (${ultimaVirada.alunosAtualizados} aluno(s)).`
+              : ` Ativado em ${formatarData(ultimaVirada.dataExecucao)}; a primeira virada é em 01/01/${ultimaVirada.ano + 1}.`)}
+          </p>
         </div>
         <button onClick={() => router.push('/')} className="px-8 py-4 bg-zinc-900 text-white rounded-2xl font-black text-sm uppercase tracking-[0.2em] hover:bg-yellow-400 hover:text-zinc-900 transition-all shadow-xl">
           Voltar ao Início
@@ -66,11 +84,11 @@ export default function AlunosPage() {
             <InputField label="Nome Completo" name="nome" onChange={handleChange} value={formData.nome} />
             <div className="grid grid-cols-2 gap-4">
               <InputField label="Nascimento" name="dataNascimento" type="date" onChange={handleChange} value={formData.dataNascimento} />
-              <InputField label="CPF" name="cpf" onChange={handleChange} value={formData.cpf} />
+              <InputField label="CPF" name="cpf" placeholder="000.000.000-00" inputMode="numeric" onChange={handleChange} value={formData.cpf} />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <InputField label="RG" name="rg" onChange={handleChange} value={formData.rg} />
-              <InputField label="Matrícula" name="numeroMatricula" onChange={handleChange} value={formData.numeroMatricula} />
+              <InputField label="Matrícula" name="numeroMatricula" placeholder="Em branco: gerada sozinha" onChange={handleChange} value={formData.numeroMatricula} />
             </div>
             <SelectField label="Ano Letivo" name="anoEscolar" onChange={handleChange} value={formData.anoEscolar}>
                <option value="">Selecione...</option>
@@ -129,7 +147,8 @@ export default function AlunosPage() {
             <tbody>
               {loading && <tr><td colSpan="5" className="p-10 text-center uppercase italic font-black text-zinc-500 animate-pulse">Carregando Alunos...</td></tr>}
 
-              {!loading && alunosFiltrados.map(aluno => (
+              {!loading && erroCarregar && <LinhaErro colunas={5} texto={erroCarregar} />}
+              {!loading && !erroCarregar && alunosFiltrados.map(aluno => (
                 <tr key={aluno.id_aluno} className="border-b border-zinc-100 hover:bg-yellow-50/50 transition-colors">
                   <td className="p-6 align-top">
                     <div className="flex flex-col gap-1">
@@ -182,7 +201,7 @@ export default function AlunosPage() {
                 </tr>
               ))}
 
-              {!loading && alunosFiltrados.length === 0 && (
+              {!loading && !erroCarregar && alunosFiltrados.length === 0 && (
                  <tr><td colSpan="5" className="p-8 text-center text-zinc-500 uppercase font-black italic">Nenhum aluno encontrado.</td></tr>
               )}
             </tbody>
@@ -191,4 +210,4 @@ export default function AlunosPage() {
       </section>
     </div>
   );
-}
+}

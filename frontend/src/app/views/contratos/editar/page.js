@@ -1,10 +1,11 @@
 "use client";
-import { Suspense, useState, useEffect, useMemo, useCallback } from 'react';
+import { Suspense, useState, useEffect, useMemo, useCallback, useContext } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useFeedback } from '../../../../components/feedback';
 import { InputField, SelectField, TextareaField } from '../../../../components/ui';
 import api, { mensagemErro } from '../../../../utils/api';
-import { formatarMoeda } from '../../../../utils/formato';
+import { AuthContext } from '../../../../context/authContext';
+import { formatarMoeda, formatarData } from '../../../../utils/formato';
 import {
   TIPO_NORMAL, TIPO_VIP, CURSOS_CONTRATO, TIPOS_CURSO, CARGAS_HORARIAS,
   DESCONTOS, CONVENIOS, DIAS_SEMANA, STATUS_MATRICULA, STATUS_ASSINATURA,
@@ -169,9 +170,16 @@ function ContratoFormConteudo() {
   const editando = Boolean(id);
 
   const [form, setForm] = useState(contratoVazio);
+  const { user } = useContext(AuthContext);
+  const souDiretor = !!user?.permissoes?.includes('ROLE_DIRETOR');
+  // Contrato que já chegou assinado fica travado (o backend também mantém os valores)
+  const [assinadoOriginal, setAssinadoOriginal] = useState(false);
+  const travado = editando && assinadoOriginal && (form.statusAssinatura || '').toUpperCase() === 'ASSINADO';
   const [alunos, setAlunos] = useState([]);
   const [turmas, setTurmas] = useState([]);
   const [responsaveis, setResponsaveis] = useState([]);
+  // Vínculos aluno-responsável, para sugerir o contratante (vazio sem permissão de leitura)
+  const [vinculos, setVinculos] = useState([]);
 
   const [parcelasCurso, setParcelasCurso] = useState([]);
   const [parcelasMaterial, setParcelasMaterial] = useState([]);
@@ -201,6 +209,10 @@ function ContratoFormConteudo() {
           api.get('/api/responsaveis')
         ];
         if (editando) chamadas.push(api.get(`/api/contratos/${id}/completo`));
+        // Sem "Vínculos: Ler" o contrato funciona igual, só sem a sugestão do contratante
+        api.get('/api/vinculos')
+          .then(res => setVinculos(Array.isArray(res.data) ? res.data : []))
+          .catch(() => setVinculos([]));
 
         const [resAlunos, resTurmas, resResponsaveis, resContrato] = await Promise.all(chamadas);
 
@@ -210,6 +222,7 @@ function ContratoFormConteudo() {
 
         if (resContrato) {
           const c = resContrato.data.contrato || {};
+          setAssinadoOriginal((c.statusAssinatura || '').toUpperCase() === 'ASSINADO');
           setForm({
             idContrato: c.idContrato ?? null,
             numeroContrato: c.numeroContrato || '',
@@ -220,6 +233,8 @@ function ContratoFormConteudo() {
             nomeConjuge: c.nomeConjuge || '',
             dataEmissao: c.dataEmissao ? String(c.dataEmissao).substring(0, 10) : '',
             status: c.status || 'Ativo',
+            dataInterrupcao: c.dataInterrupcao || null,
+            idTurmaOriginal: c.turma ? String(c.turma.id_turma) : '',
             statusAssinatura: c.statusAssinatura || 'Aguardando Assinatura',
             cursoNome: c.cursoNome || '',
             tipoCurso: c.tipoCurso || 'Semestral',
@@ -296,6 +311,28 @@ function ContratoFormConteudo() {
   };
 
   // O cônjuge do contratante já vem do cadastro do responsável, quando preenchido
+  const vinculosDoAluno = useMemo(
+    () => vinculos.filter(v => String(v.aluno?.id_aluno) === String(form.idAluno)),
+    [vinculos, form.idAluno]
+  );
+  const contratanteForaDoVinculo = vinculos.length > 0 && form.idAluno && form.idResponsavel
+    && !vinculosDoAluno.some(v => String(v.responsavel?.id_responsavel) === String(form.idResponsavel));
+
+  // Ao escolher o aluno, sugere o responsável financeiro do vínculo (se ainda não há contratante)
+  const aoEscolherAluno = (e) => {
+    const idAluno = e.target.value;
+    const financeiro = vinculos.find(v => String(v.aluno?.id_aluno) === String(idAluno) && v.isResponsavelFinanceiro);
+    setForm(anterior => {
+      if (anterior.idResponsavel || !financeiro?.responsavel) return { ...anterior, idAluno };
+      return {
+        ...anterior,
+        idAluno,
+        idResponsavel: String(financeiro.responsavel.id_responsavel),
+        nomeConjuge: anterior.nomeConjuge || financeiro.responsavel.nomeConjuge || ''
+      };
+    });
+  };
+
   const aoEscolherResponsavel = (e) => {
     const idResponsavel = e.target.value;
     const responsavel = responsaveis.find(r => String(r.id_responsavel) === String(idResponsavel));
@@ -512,12 +549,23 @@ function ContratoFormConteudo() {
         </div>
       )}
 
+      {travado && (
+        <div className="mb-8 bg-zinc-900 text-white rounded-3xl p-6 font-bold text-sm leading-relaxed">
+          <span className="font-black uppercase tracking-widest text-xs block mb-1 text-yellow-400">Contrato assinado</span>
+          Partes, curso, valores e parcelas não mudam mais. Dá para alterar a situação da matrícula e as observações,
+          e renegociar parcelas no Financeiro.
+          {souDiretor
+            ? ' Para corrigir o contrato, volte a assinatura para "Aguardando Assinatura".'
+            : ' Para corrigir o contrato, peça ao diretor.'}
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="space-y-8">
 
         {/* Modelo do contrato */}
         <div className={CLASSE_CARTAO}>
           <h2 className={CLASSE_SECAO}>01. Modelo do contrato</h2>
-          <div className="flex gap-4 flex-wrap">
+          <fieldset disabled={travado} className="flex gap-4 flex-wrap min-w-0 disabled:opacity-60">
             {[TIPO_NORMAL, TIPO_VIP].map(tipo => (
               <button
                 key={tipo}
@@ -532,7 +580,7 @@ function ContratoFormConteudo() {
                 Contrato {tipo === TIPO_VIP ? 'VIP' : 'Normal'}
               </button>
             ))}
-          </div>
+          </fieldset>
           <p className="text-xs font-bold text-zinc-500 leading-relaxed">
             {ehVip
               ? 'No VIP a cobrança do curso é por hora/aula dada: cada parcela recebe o número de H/A e o valor correspondente.'
@@ -545,7 +593,8 @@ function ContratoFormConteudo() {
           {/* Partes */}
           <div className={CLASSE_CARTAO}>
             <h2 className={CLASSE_SECAO}>02. Partes</h2>
-            <SelectField label="Aluno(a)" name="idAluno" value={form.idAluno} onChange={handleChange} required>
+            <fieldset disabled={travado} className="space-y-6 min-w-0 disabled:opacity-60">
+            <SelectField label="Aluno(a)" name="idAluno" value={form.idAluno} onChange={aoEscolherAluno} required>
               <option value="">Selecione o aluno...</option>
               {alunos.map(a => (
                 <option key={a.id_aluno} value={a.id_aluno}>#{a.numeroMatricula} — {a.nome}</option>
@@ -554,11 +603,15 @@ function ContratoFormConteudo() {
 
             <SelectField label="Turma" name="idTurma" value={form.idTurma} onChange={aoEscolherTurma} required>
               <option value="">Selecione a turma...</option>
-              {turmas.map(t => (
-                <option key={t.id_turma} value={t.id_turma}>
-                  {t.codigoTurma} — {t.curso ? t.curso.nome : 'Sem curso'} ({t.semestreAno || 's/ semestre'})
-                </option>
-              ))}
+              {/* Turma fechada não recebe matrícula; só aparece se já for a turma deste contrato */}
+              {turmas
+                .filter(t => (t.status || '').toUpperCase() !== 'FECHADA' || String(t.id_turma) === form.idTurmaOriginal)
+                .map(t => (
+                  <option key={t.id_turma} value={t.id_turma}>
+                    {t.codigoTurma} — {t.curso ? t.curso.nome : 'Sem curso'} ({t.semestreAno || 's/ semestre'})
+                    {(t.status || '').toUpperCase() === 'FECHADA' ? ' · fechada' : ''}
+                  </option>
+                ))}
             </SelectField>
 
             {turmaSelecionada && (
@@ -575,6 +628,14 @@ function ContratoFormConteudo() {
                 <option key={r.id_responsavel} value={r.id_responsavel}>{r.nome} — {r.cpf || 'sem CPF'}</option>
               ))}
             </SelectField>
+            {contratanteForaDoVinculo && (
+              <p className="text-xs font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded-xl p-4 -mt-2">
+                Este responsável não está vinculado ao aluno.
+                {vinculosDoAluno.length > 0
+                  ? ` Vinculados: ${vinculosDoAluno.map(v => v.responsavel?.nome + (v.isResponsavelFinanceiro ? ' (financeiro)' : '')).join(', ')}.`
+                  : ' O aluno não tem responsáveis vinculados.'}
+              </p>
+            )}
 
             <InputField label="Nome do cônjuge do(a) contratante" name="nomeConjuge" value={form.nomeConjuge} onChange={handleChange} placeholder="Opcional" />
 
@@ -582,15 +643,25 @@ function ContratoFormConteudo() {
               <InputField label="Nº do contrato" name="numeroContrato" value={form.numeroContrato} onChange={handleChange} placeholder="Gerado automaticamente" />
               <InputField label="Data de emissão" name="dataEmissao" type="date" value={form.dataEmissao} onChange={handleChange} />
             </div>
+            </fieldset>
 
             <div className="grid grid-cols-2 gap-6">
               <SelectField label="Situação da matrícula" name="status" value={form.status} onChange={handleChange}>
                 {STATUS_MATRICULA.map(s => <option key={s} value={s}>{s}</option>)}
               </SelectField>
-              <SelectField label="Assinatura" name="statusAssinatura" value={form.statusAssinatura} onChange={handleChange}>
+              <SelectField label="Assinatura" name="statusAssinatura" value={form.statusAssinatura} onChange={handleChange}
+                disabled={editando && assinadoOriginal && !souDiretor}>
                 {STATUS_ASSINATURA.map(s => <option key={s} value={s}>{s}</option>)}
               </SelectField>
             </div>
+
+            {form.idContrato && ['TRANCADO', 'CANCELADO'].includes((form.status || '').toUpperCase()) && (
+              <p className="text-xs font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded-xl p-4 leading-relaxed">
+                Matrícula {form.status.toLowerCase()}: as parcelas em aberto que vencem a partir de{' '}
+                {form.dataInterrupcao ? formatarData(form.dataInterrupcao) : 'hoje'} deixam de ser cobradas.
+                As que já tinham vencido continuam em aberto. Voltar para Ativo faz todas valerem de novo.
+              </p>
+            )}
           </div>
 
           {/* Cláusula 1 */}
@@ -600,6 +671,7 @@ function ContratoFormConteudo() {
               Estes dados são gravados no contrato como cópia. Editar a turma depois não muda o que foi assinado.
             </p>
 
+            <fieldset disabled={travado} className="space-y-6 min-w-0 disabled:opacity-60">
             <SelectField label="Curso" name="cursoNome" value={form.cursoNome} onChange={handleChange}>
               <option value="">Selecione o curso...</option>
               {CURSOS_CONTRATO.map(c => <option key={c} value={c}>{c}</option>)}
@@ -642,6 +714,7 @@ function ContratoFormConteudo() {
                 {CONVENIOS[chaveTipo].map(c => <option key={c} value={c}>{c}</option>)}
               </SelectField>
             </div>
+            </fieldset>
           </div>
         </div>
 
@@ -649,6 +722,7 @@ function ContratoFormConteudo() {
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
           <div className={CLASSE_CARTAO}>
             <h2 className={CLASSE_SECAO}>04. Curso</h2>
+            <fieldset disabled={travado} className="space-y-6 min-w-0 disabled:opacity-60">
             <div className="grid grid-cols-2 gap-6">
               <InputField label="Valor total" name="valorTotalCurso" type="number" step="0.01" min="0" value={form.valorTotalCurso} onChange={handleChange} placeholder="0,00" />
               <InputField label="Com desconto" name="valorComDesconto" type="number" step="0.01" min="0" value={form.valorComDesconto} onChange={handleChange} placeholder="0,00" />
@@ -694,10 +768,12 @@ function ContratoFormConteudo() {
                 o valor é calculado por {formatarMoeda(numero(form.valorHoraAula) ?? VALOR_HORA_AULA_PADRAO)} a hora/aula.
               </p>
             )}
+            </fieldset>
           </div>
 
           <div className={CLASSE_CARTAO}>
             <h2 className={CLASSE_SECAO}>05. Material didático</h2>
+            <fieldset disabled={travado} className="space-y-6 min-w-0 disabled:opacity-60">
             <div className="grid grid-cols-2 gap-6">
               <InputField label="Valor total" name="valorTotalMaterial" type="number" step="0.01" min="0" value={form.valorTotalMaterial} onChange={handleChange} placeholder="0,00" />
               <InputField label="Dia do vencimento" name="diaVencimentoMaterial" type="number" min="1" max="31" value={form.diaVencimentoMaterial} onChange={handleChange} placeholder="Ex: 25" />
@@ -718,10 +794,13 @@ function ContratoFormConteudo() {
               </button>
             </div>
 
+            </fieldset>
+
             <TextareaField label="Observações" name="observacoes" value={form.observacoes} onChange={handleChange} altura="h-24" placeholder="Anotações internas da secretaria." />
           </div>
         </div>
 
+        <fieldset disabled={travado} className="space-y-8 min-w-0 disabled:opacity-60">
         <TabelaParcelas
           destino="curso"
           titulo="06. Parcelas do curso"
@@ -749,6 +828,7 @@ function ContratoFormConteudo() {
           onRemover={removerLinha}
           onAulas={() => {}}
         />
+        </fieldset>
 
         <div className="bg-zinc-900 p-8 rounded-3xl shadow-xl flex flex-col sm:flex-row gap-4 items-center justify-between">
           <p className="text-zinc-400 font-bold text-sm">

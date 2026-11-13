@@ -61,6 +61,20 @@ export default function TurmasPage() {
     } catch (err) { notificar(mensagemErro(err, "Erro ao salvar turma."), 'erro'); }
   };
 
+  // Fim do semestre: conclui as matrículas e trava notas e faltas (só o diretor altera depois)
+  const handleEncerrar = async (turma) => {
+    const ok = await confirmar(
+      `Encerrar a turma ${turma.codigoTurma}? As matrículas ativas viram "Concluído", as vagas são liberadas e o boletim mostra o resultado final. Depois disso, notas e faltas só podem ser alteradas pelo diretor.`,
+      { titulo: 'Encerrar turma', rotuloConfirmar: 'Encerrar' }
+    );
+    if (!ok) return;
+    try {
+      await api.post(`/api/turmas/${turma.id_turma}/encerrar`);
+      notificar(`Turma ${turma.codigoTurma} encerrada.`, 'sucesso');
+      carregarDados();
+    } catch (err) { notificar(mensagemErro(err, "Não foi possível encerrar a turma."), 'erro'); }
+  };
+
   const handleExcluir = async (id) => {
     if (await confirmar("Atenção! Deseja excluir esta turma?")) {
       try {
@@ -193,7 +207,7 @@ export default function TurmasPage() {
                   </td>
                   
                   <td className="p-6 align-middle text-center">
-                    <span className={`px-3 py-1.5 rounded-lg font-black text-[10px] uppercase border tracking-widest ${turma.status === 'Aberta' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : turma.status === 'Em Andamento' ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
+                    <span className={`px-3 py-1.5 rounded-lg font-black text-[10px] uppercase border tracking-widest ${turma.status === 'Aberta' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : turma.status === 'Em Andamento' ? 'bg-blue-50 text-blue-700 border-blue-200' : turma.status === 'Concluída' ? 'bg-zinc-900 text-white border-zinc-900' : 'bg-red-50 text-red-700 border-red-200'}`}>
                       {turma.status}
                     </span>
                   </td>
@@ -202,6 +216,9 @@ export default function TurmasPage() {
                     <div className="flex justify-center gap-3">
                       {temPermissao('TURMAS_WRITE') && (
                         <button onClick={() => router.push(`/views/turmas/editar?id=${turma.id_turma}`)} className="w-12 h-12 flex items-center justify-center bg-zinc-900 text-white hover:bg-yellow-400 hover:text-zinc-900 rounded-xl transition-all shadow-md text-xl">✎</button>
+                      )}
+                      {temPermissao('TURMAS_WRITE') && turma.status !== 'Concluída' && (
+                        <button onClick={() => handleEncerrar(turma)} title="Encerrar turma (fim do semestre)" className="w-12 h-12 flex items-center justify-center bg-white text-zinc-900 border-2 border-zinc-200 hover:bg-zinc-900 hover:text-white rounded-xl transition-all shadow-md text-xl">🏁</button>
                       )}
                       {temPermissao('TURMAS_DELETE') && (
                         <button onClick={() => handleExcluir(turma.id_turma)} className="w-12 h-12 flex items-center justify-center bg-white text-zinc-900 border-2 border-zinc-200 hover:bg-red-600 hover:text-white rounded-xl transition-all shadow-md text-xl">🗑</button>
@@ -220,4 +237,4 @@ export default function TurmasPage() {
       </section>
     </div>
   );
-}
+}

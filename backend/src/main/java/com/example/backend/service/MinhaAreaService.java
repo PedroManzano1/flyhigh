@@ -4,6 +4,7 @@ import com.example.backend.dto.MinhaAreaDTO;
 import com.example.backend.dto.ParcelaFinanceiraDTO;
 import com.example.backend.model.Aluno;
 import com.example.backend.model.Contrato;
+import com.example.backend.model.LancamentoFinanceiro;
 import com.example.backend.model.RecadoGeral;
 import com.example.backend.model.Usuario;
 import com.example.backend.repository.ContratoRepository;
@@ -47,15 +48,19 @@ public class MinhaAreaService {
         area.setAlunoMatricula(aluno.getNumeroMatricula());
 
         for (Contrato contrato : contratoRepo.findByAlunoId(aluno.getId_aluno())) {
-            boolean ativo = "ATIVO".equalsIgnoreCase(contrato.getStatus());
-            if (ativo && contrato.getTurma() != null) {
-                area.getBoletins().add(
-                        boletimService.gerarBoletimDoAluno(contrato.getTurma().getId_turma(), aluno.getId_aluno()));
+            if (contrato.getTurma() == null) continue;
+            Long idTurma = contrato.getTurma().getId_turma();
+            if (ContratoService.estaConcluido(contrato)) {
+                area.getBoletinsConcluidos().add(boletimService.gerarBoletimDoAluno(idTurma, aluno.getId_aluno()));
+            } else if ("ATIVO".equalsIgnoreCase(contrato.getStatus())) {
+                area.getBoletins().add(boletimService.gerarBoletimDoAluno(idTurma, aluno.getId_aluno()));
             }
         }
 
         List<ParcelaFinanceiraDTO> parcelas =
                 financeiroService.listar(null, null, null, null, aluno.getId_aluno(), null, null);
+        // Parcela cancelada junto com a matrícula não é cobrança: não aparece para o aluno
+        parcelas.removeIf(p -> LancamentoFinanceiro.CANCELADA.equals(p.getStatus()));
         // Anotações internas da secretaria não aparecem para o aluno
         parcelas.forEach(p -> {
             p.setUsuarioBaixa(null);
@@ -64,8 +69,8 @@ public class MinhaAreaService {
         area.setParcelas(parcelas);
 
         LocalDate hoje = LocalDate.now();
-        for (RecadoGeral r : recadoService.listarTodos()) {
-            if (r.getDataExpiracao() != null && r.getDataExpiracao().isBefore(hoje)) continue;
+        // Só recados já publicados e ainda não expirados
+        for (RecadoGeral r : recadoService.listarVisiveis(hoje)) {
             MinhaAreaDTO.Recado recado = new MinhaAreaDTO.Recado();
             recado.setIdRecado(r.getId_recado());
             recado.setTitulo(r.getTitulo());

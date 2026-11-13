@@ -1,6 +1,7 @@
 package com.example.backend.controller;
 
 import com.example.backend.model.Nota;
+import com.example.backend.service.AcessoPedagogicoService;
 import com.example.backend.service.NotaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +17,9 @@ public class NotaController {
 
     @Autowired
     private NotaService service;
+
+    @Autowired
+    private AcessoPedagogicoService acesso;
 
     // Salvar uma única nota
     @PreAuthorize("hasRole('DIRETOR') or hasAuthority('AVALIACOES_WRITE')")
@@ -35,20 +39,24 @@ public class NotaController {
     @PreAuthorize("hasRole('DIRETOR') or hasAuthority('AVALIACOES_READ')")
     @GetMapping("/aluno/{idAluno}")
     public ResponseEntity<List<Nota>> listarNotasPorAluno(@PathVariable Long idAluno) {
-        return ResponseEntity.ok(service.buscarNotasPorAluno(idAluno));
+        return ResponseEntity.ok(acesso.filtrarPorTurma(service.buscarNotasPorAluno(idAluno),
+                n -> n.getAvaliacao() != null ? n.getAvaliacao().getTurma() : null));
     }
 
     // Listar espelho de notas de uma prova específica
     @PreAuthorize("hasRole('DIRETOR') or hasAuthority('AVALIACOES_READ')")
     @GetMapping("/avaliacao/{idAvaliacao}")
     public ResponseEntity<List<Nota>> listarNotasPorAvaliacao(@PathVariable Long idAvaliacao) {
-        return ResponseEntity.ok(service.buscarNotasPorAvaliacao(idAvaliacao));
+        // A avaliação precisa ser de uma turma liberada para quem está lendo
+        return ResponseEntity.ok(acesso.filtrarPorTurma(service.buscarNotasPorAvaliacao(idAvaliacao),
+                n -> n.getAvaliacao() != null ? n.getAvaliacao().getTurma() : null));
     }
 
     // Todas as notas da turma: usado no boletim e no resumo da tela de notas
     @PreAuthorize("hasRole('DIRETOR') or hasAuthority('AVALIACOES_READ')")
     @GetMapping("/turma/{idTurma}")
     public ResponseEntity<List<Nota>> listarNotasPorTurma(@PathVariable Long idTurma) {
+        acesso.validarLeituraDaTurma(idTurma);
         return ResponseEntity.ok(service.buscarNotasPorTurma(idTurma));
     }
 

@@ -10,6 +10,7 @@ export const FILTROS_STATUS = [
   { valor: 'ATRASADA', rotulo: 'Atrasadas' },
   { valor: 'PENDENTE', rotulo: 'A vencer' },
   { valor: 'PAGA', rotulo: 'Pagas' },
+  { valor: 'CANCELADA', rotulo: 'Canceladas (matrícula trancada/cancelada)' },
   { valor: '', rotulo: 'Todas' }
 ];
 

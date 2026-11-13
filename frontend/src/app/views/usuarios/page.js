@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { AuthContext } from '../../../context/authContext';
 import { PERFIL_ALUNO } from '../../../utils/permissoes';
 import { formatarData } from '../../../utils/formato';
+import { formatarCpf, mesmoCpf, somenteNumeros } from '../../../utils/cpf';
 
 /**
  * Equipe e contas de acesso. Também é aqui que a secretaria aprova os cadastros
@@ -26,16 +27,21 @@ const ESTILO_STATUS = {
 // --- Componentes de apoio (fora da página para não perder o foco dos inputs) ---
 
 function LinhaPendente({ usuario, alunosLivres, podeAprovar, podeRecusar, onAprovar, onRecusar }) {
-  // Sugere o aluno cuja matrícula bate com a digitada no cadastro
-  const sugerido = alunosLivres.find(a =>
-    usuario.matriculaInformada && a.numeroMatricula === usuario.matriculaInformada.trim());
+  // Sugere o aluno pelo CPF digitado no cadastro; cadastros antigos, sem CPF,
+  // ainda usam a matrícula
+  const sugerido = alunosLivres.find(a => usuario.cpfInformado && mesmoCpf(a.cpf, usuario.cpfInformado))
+    || alunosLivres.find(a => usuario.matriculaInformada && a.numeroMatricula === usuario.matriculaInformada.trim());
+  const sugeridoPeloCpf = !!sugerido && mesmoCpf(sugerido.cpf, usuario.cpfInformado);
   const [filtro, setFiltro] = useState('');
   const [idAluno, setIdAluno] = useState(sugerido ? String(sugerido.id_aluno) : '');
 
   const opcoes = useMemo(() => {
     const termo = normalizar(filtro.trim());
+    const termoNumeros = somenteNumeros(filtro);
     const lista = termo
-      ? alunosLivres.filter(a => normalizar(a.nome).includes(termo) || (a.numeroMatricula || '').includes(termo))
+      ? alunosLivres.filter(a => normalizar(a.nome).includes(termo)
+          || (a.numeroMatricula || '').includes(termo)
+          || (termoNumeros.length >= 3 && somenteNumeros(a.cpf).includes(termoNumeros)))
       : alunosLivres;
     // Mantém a opção escolhida visível mesmo que o filtro a esconda
     const escolhido = alunosLivres.find(a => String(a.id_aluno) === idAluno);
@@ -49,15 +55,27 @@ function LinhaPendente({ usuario, alunosLivres, podeAprovar, podeRecusar, onApro
         <div className="font-mono text-sm font-bold text-zinc-600 mt-1">{usuario.login}</div>
         <div className="text-[11px] font-bold text-zinc-500 mt-2">
           Pedido em {usuario.dataCadastro ? formatarData(usuario.dataCadastro) : '---'}
-          {usuario.matriculaInformada && <> · matrícula informada <span className="font-mono font-black text-zinc-700">#{usuario.matriculaInformada}</span></>}
         </div>
+        {usuario.cpfInformado && (
+          <div className="text-[11px] font-bold text-zinc-500 mt-1">
+            CPF <span className="font-mono font-black text-zinc-700">{formatarCpf(usuario.cpfInformado)}</span>
+            {usuario.matriculaInformada
+              ? <> · matrícula encontrada <span className="font-mono font-black text-zinc-700">#{usuario.matriculaInformada}</span></>
+              : <span className="text-amber-700"> · nenhum aluno com este CPF</span>}
+          </div>
+        )}
+        {!usuario.cpfInformado && usuario.matriculaInformada && (
+          <div className="text-[11px] font-bold text-zinc-500 mt-1">
+            matrícula informada <span className="font-mono font-black text-zinc-700">#{usuario.matriculaInformada}</span>
+          </div>
+        )}
       </td>
       <td className="p-6 align-top min-w-[320px]">
         {podeAprovar ? (
           <div className="space-y-2">
             <input
               type="text" value={filtro} onChange={e => setFiltro(e.target.value)}
-              placeholder="Buscar aluno por nome ou matrícula..."
+              placeholder="Buscar aluno por nome, matrícula ou CPF..."
               className="w-full px-4 py-2 rounded-xl border border-zinc-300 text-sm font-bold text-zinc-900 outline-none focus:ring-4 focus:ring-yellow-400/20"
             />
             <select
@@ -70,7 +88,7 @@ function LinhaPendente({ usuario, alunosLivres, podeAprovar, podeRecusar, onApro
               ))}
             </select>
             {sugerido && String(sugerido.id_aluno) === idAluno && (
-              <div className="text-[11px] font-black uppercase tracking-widest text-emerald-700">✔ Sugerido pela matrícula informada</div>
+              <div className="text-[11px] font-black uppercase tracking-widest text-emerald-700">✔ {sugeridoPeloCpf ? 'CPF confere com o cadastro do aluno' : 'Sugerido pela matrícula informada'}</div>
             )}
           </div>
         ) : (
@@ -107,7 +125,8 @@ function LinhaPendente({ usuario, alunosLivres, podeAprovar, podeRecusar, onApro
 export default function UsuariosPage() {
   const router = useRouter();
   const { notificar, confirmar } = useFeedback();
-  const { temPermissao } = useContext(AuthContext);
+  const { user, temPermissao } = useContext(AuthContext);
+  const souDiretor = !!user?.permissoes?.includes('ROLE_DIRETOR');
 
   const [usuarios, setUsuarios] = useState([]);
   const [perfis, setPerfis] = useState([]);
@@ -148,7 +167,11 @@ export default function UsuariosPage() {
   const pendentes = usuarios.filter(ehPendente);
   const contasDeAluno = usuarios.filter(u => !ehPendente(u) && ehContaAluno(u));
   const equipe = usuarios.filter(u => !ehPendente(u) && !ehContaAluno(u));
-  const perfisDeEquipe = perfis.filter(p => (p.nomePerfil || '').toUpperCase() !== PERFIL_ALUNO);
+  // O perfil DIRETOR só é oferecido a quem já é diretor (o backend também recusa)
+  const perfisDeEquipe = perfis.filter(p => {
+    const nome = (p.nomePerfil || '').toUpperCase();
+    return nome !== PERFIL_ALUNO && (souDiretor || nome !== 'DIRETOR');
+  });
 
   // Aluno que já tem conta não aparece de novo na lista de vínculo
   const alunosLivres = useMemo(() => {
@@ -301,7 +324,7 @@ export default function UsuariosPage() {
 
             <InputField label="Nome Completo" name="nome" value={formData.nome} onChange={e => setFormData({...formData, nome: e.target.value})} required />
             <InputField label="Login" name="login" value={formData.login} onChange={e => setFormData({...formData, login: e.target.value})} required className="font-mono" />
-            <InputField label="Senha Temporária" name="senha" type="password" value={formData.senha} onChange={e => setFormData({...formData, senha: e.target.value})} required />
+            <InputField label="Senha Temporária" name="senha" type="password" placeholder="Mínimo 8 caracteres" minLength={8} value={formData.senha} onChange={e => setFormData({...formData, senha: e.target.value})} required />
 
             <SelectField label="Cargo / Perfil" name="idPerfil" value={formData.idPerfil} onChange={e => setFormData({...formData, idPerfil: e.target.value})} required>
               <option value="">Selecione um perfil...</option>

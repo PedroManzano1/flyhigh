@@ -5,10 +5,12 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Component;
 
+import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Date;
 import java.util.List;
@@ -17,13 +19,22 @@ import java.util.stream.Collectors;
 @Component
 public class JwtUtils {
 
-    // Chave secreta para assinar o token.
-    // Em produção, isso deve ficar no arquivo application.properties.
-    private static final String SECRET_KEY = "FlyHighIdiomasChaveSecretaMuitoSeguraParaGerarTokens123!";
     private static final long EXPIRATION_TIME = 86400000; // 24 horas em milissegundos
 
+    // A chave vem de JWT_SECRET (variável de ambiente ou application-local.properties),
+    // nunca do código: quem tem a chave consegue montar um token de diretor.
+    private final Key chave;
+
+    public JwtUtils(@Value("${flyhigh.jwt.secret}") String segredo) {
+        if (segredo == null || segredo.getBytes(StandardCharsets.UTF_8).length < 32) {
+            throw new IllegalStateException(
+                    "JWT_SECRET precisa ter pelo menos 32 caracteres. Veja application-local.example.properties.");
+        }
+        this.chave = Keys.hmacShaKeyFor(segredo.getBytes(StandardCharsets.UTF_8));
+    }
+
     private Key getSigningKey() {
-        return Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
+        return chave;
     }
 
     // 1. Gera o token (Chamado na hora do Login)

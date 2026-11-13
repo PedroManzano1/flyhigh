@@ -4,9 +4,12 @@ import com.example.backend.model.RecadoGeral;
 import com.example.backend.service.RecadoGeralService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -26,8 +29,12 @@ public class RecadoGeralController {
     // Liberei leitura para todos os perfis principais (Ajuste conforme suas roles reais)
     @PreAuthorize("hasRole('DIRETOR') or hasRole('PROFESSOR') or hasRole('ALUNO') or hasAuthority('RECADOS_READ')")
     @GetMapping
-    public List<RecadoGeral> getAll() {
-        return service.listarTodos();
+    public List<RecadoGeral> getAll(Authentication autenticacao) {
+        // Quem só vê o mural (conta de aluno) não recebe recado agendado nem expirado
+        boolean equipe = autenticacao != null && autenticacao.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .anyMatch(a -> a.equals("ROLE_DIRETOR") || a.equals("RECADOS_READ"));
+        return equipe ? service.listarTodos() : service.listarVisiveis(LocalDate.now());
     }
 
     @PreAuthorize("hasRole('DIRETOR') or hasAuthority('RECADOS_READ')")
@@ -45,7 +52,7 @@ public class RecadoGeralController {
             recado.setId_recado(id);
             // Garante que a data de publicação original não seja sobrescrita acidentalmente na edição
             recado.setDataPublicacao(existente.getDataPublicacao());
-            return ResponseEntity.ok(service.salvar(recado));
+            return ResponseEntity.ok(service.atualizar(recado, existente.getUsuarioAutor()));
         }).orElse(ResponseEntity.notFound().build());
     }
 

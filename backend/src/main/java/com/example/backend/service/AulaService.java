@@ -48,6 +48,12 @@ public class AulaService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Turma não encontrada."));
         // Professor só registra aula na turma em que está vinculado
         acessoPedagogico.validarLancamentoNaTurma(turmaReal);
+        // Na edição vale também a turma de onde a aula vem: senão um professor
+        // poderia puxar para a turma dele a aula (e a chamada) de outra turma
+        if (aula.getId_aula() != null) {
+            aulaRepo.findById(aula.getId_aula())
+                    .ifPresent(existente -> acessoPedagogico.validarLancamentoNaTurma(existente.getTurma()));
+        }
 
         // Duas aulas da mesma turma no mesmo dia duplicariam a chamada e distorceriam a frequência
         boolean dataOcupada = aulaRepo
@@ -75,6 +81,11 @@ public class AulaService {
 
     @Transactional
     public void excluir(Long id) {
+        Aula aula = aulaRepo.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Aula não encontrada."));
+        // Mesma regra do lançamento: professor só apaga o diário da própria turma
+        acessoPedagogico.validarLancamentoNaTurma(aula.getTurma());
+
         // Remove antes a chamada da aula, senão a FK de "frequencias" impede a exclusão.
         frequenciaRepo.deleteByAulaId(id);
         aulaRepo.deleteById(id);

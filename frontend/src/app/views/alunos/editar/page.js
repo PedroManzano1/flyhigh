@@ -3,7 +3,9 @@ import { Suspense, useState, useEffect } from 'react';
 import { useFeedback } from '../../../../components/feedback';
 import { InputField, SelectField } from '../../../../components/ui';
 import api, { mensagemErro } from '../../../../utils/api';
+import { formatarCpf } from '../../../../utils/cpf';
 import { useRouter, useSearchParams } from 'next/navigation'; 
+import { ANOS_ESCOLARES } from '../../../../utils/alunos';
 
 
 function EditarAlunoPageConteudo() {
@@ -30,7 +32,7 @@ function EditarAlunoPageConteudo() {
           numeroMatricula: aluno.numeroMatricula || '',
           dataNascimento: aluno.dataNascimento || '',
           rg: aluno.rg || '',
-          cpf: aluno.cpf || '',
+          cpf: formatarCpf(aluno.cpf || ''),
           anoEscolar: aluno.anoEscolar || '',
           telefonePrincipal: aluno.telefonePrincipal || '',
           telefoneSecundario: aluno.telefoneSecundario || '',
@@ -49,7 +51,7 @@ function EditarAlunoPageConteudo() {
     carregarAluno();
   }, [id, router]);
 
-  const handleChange = (e) => { setFormData({ ...formData, [e.target.name]: e.target.value }); };
+  const handleChange = (e) => { setFormData({ ...formData, [e.target.name]: e.target.name === 'cpf' ? formatarCpf(e.target.value) : e.target.value }); };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -93,7 +95,7 @@ function EditarAlunoPageConteudo() {
           <InputField label="Nome Completo" name="nome" onChange={handleChange} value={formData.nome} />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <InputField label="Nascimento" name="dataNascimento" type="date" onChange={handleChange} value={formData.dataNascimento} />
-            <InputField label="CPF" name="cpf" onChange={handleChange} value={formData.cpf} />
+            <InputField label="CPF" name="cpf" placeholder="000.000.000-00" inputMode="numeric" onChange={handleChange} value={formData.cpf} />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <InputField label="RG" name="rg" onChange={handleChange} value={formData.rg} />
@@ -101,8 +103,11 @@ function EditarAlunoPageConteudo() {
           </div>
           <SelectField label="Ano Escolar" name="anoEscolar" onChange={handleChange} value={formData.anoEscolar}>
             <option value="">Selecione o ano</option>
-            <option value="1º Ano Fundamental">1º Ano Fundamental</option>
-            {/* Opções... */}
+            {/* Valor antigo fora da lista (ex.: Educação Infantil) continua visível até ser trocado */}
+            {formData.anoEscolar && !ANOS_ESCOLARES.includes(formData.anoEscolar) && (
+              <option value={formData.anoEscolar}>{formData.anoEscolar} (valor antigo)</option>
+            )}
+            {ANOS_ESCOLARES.map(ano => <option key={ano} value={ano}>{ano}</option>)}
           </SelectField>
         </div>
 

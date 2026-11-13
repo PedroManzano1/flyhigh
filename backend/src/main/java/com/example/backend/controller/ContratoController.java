@@ -3,6 +3,7 @@ package com.example.backend.controller;
 import com.example.backend.dto.ContratoFormDTO;
 import com.example.backend.model.Contrato;
 import com.example.backend.model.LancamentoFinanceiro;
+import com.example.backend.service.AcessoPedagogicoService;
 import com.example.backend.service.ContratoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +19,9 @@ public class ContratoController {
 
     @Autowired
     private ContratoService service;
+
+    @Autowired
+    private AcessoPedagogicoService acesso;
 
     @PreAuthorize("hasRole('DIRETOR') or hasAuthority('CONTRATOS_WRITE')")
     @PostMapping
@@ -60,9 +64,24 @@ public class ContratoController {
     public ResponseEntity<List<Contrato>> getByTurma(
             @PathVariable Long idTurma,
             @RequestParam(name = "somenteAtivos", defaultValue = "true") boolean somenteAtivos) {
-        return ResponseEntity.ok(somenteAtivos
+        List<Contrato> contratos = somenteAtivos
                 ? service.buscarAtivosPorTurma(idTurma)
-                : service.buscarPorTurma(idTurma));
+                : service.buscarPorTurma(idTurma);
+        if (acesso.temAutoridade("CONTRATOS_READ")) {
+            return ResponseEntity.ok(contratos);
+        }
+        // Professor: só das próprias turmas, e só a lista de alunos (sem valores do contrato)
+        acesso.validarLeituraDaTurma(idTurma);
+        return ResponseEntity.ok(contratos.stream().map(ContratoController::somenteMatricula).toList());
+    }
+
+    private static Contrato somenteMatricula(Contrato original) {
+        Contrato resumo = new Contrato();
+        resumo.setIdContrato(original.getIdContrato());
+        resumo.setAluno(original.getAluno());
+        resumo.setTurma(original.getTurma());
+        resumo.setStatus(original.getStatus());
+        return resumo;
     }
 
     // Quantas vagas da turma já estão ocupadas por contratos ativos
@@ -93,6 +112,13 @@ public class ContratoController {
             }
             return ResponseEntity.ok(service.salvar(form));
         }).orElse(ResponseEntity.notFound().build());
+    }
+
+    // Leva um contrato ainda não assinado para a versão atual do modelo de contrato
+    @PreAuthorize("hasRole('DIRETOR') or hasAuthority('CONTRATOS_WRITE')")
+    @PatchMapping("/{id}/atualizar-modelo")
+    public Contrato atualizarModelo(@PathVariable Integer id) {
+        return service.atualizarModelo(id);
     }
 
     @PreAuthorize("hasRole('DIRETOR') or hasAuthority('CONTRATOS_DELETE')")

@@ -15,6 +15,8 @@ public class MinhaAreaDTO {
 
     // Um boletim por matrícula ativa, só com a linha do próprio aluno
     private List<BoletimTurmaDTO> boletins = new ArrayList<>();
+    // Turmas já encerradas, com o resultado final
+    private List<BoletimTurmaDTO> boletinsConcluidos = new ArrayList<>();
 
     private List<ParcelaFinanceiraDTO> parcelas = new ArrayList<>();
 

@@ -1,5 +1,6 @@
 package com.example.backend.repository;
 
+import java.util.List;
 import com.example.backend.model.Turma;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -9,6 +10,12 @@ public interface TurmaRepository extends JpaRepository<Turma, Long> {
 
     @Query("SELECT COUNT(t) FROM Turma t WHERE t.curso.id_curso = :idCurso")
     long contarPorCurso(@Param("idCurso") Long idCurso);
+
+    @Query("SELECT t FROM Turma t WHERE LOWER(TRIM(t.codigoTurma)) = LOWER(TRIM(:codigo))")
+    List<Turma> buscarPorCodigo(@Param("codigo") String codigo);
+
+    @Query("SELECT t.id_turma FROM Turma t WHERE t.professor.idUsuario = :idProfessor")
+    List<Long> idsPorProfessor(@Param("idProfessor") Integer idProfessor);
 
     @Query("SELECT COUNT(t) FROM Turma t WHERE t.professor.idUsuario = :idProfessor")
     long contarPorProfessor(@Param("idProfessor") Integer idProfessor);

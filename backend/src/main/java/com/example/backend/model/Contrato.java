@@ -19,6 +19,9 @@ public class Contrato {
     public static final String NORMAL = "NORMAL";
     public static final String VIP = "VIP";
 
+    // Situação da matrícula quando a turma é encerrada
+    public static final String CONCLUIDO = "Concluído";
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_contrato")
@@ -51,9 +54,15 @@ public class Contrato {
     @Column(name = "data_emissao")
     private LocalDate dataEmissao;
 
-    // Situação da matrícula: Ativo, Trancado ou Cancelado
+    // Situação da matrícula: Ativo, Trancado, Cancelado ou Concluído
     @Column(name = "status")
     private String status;
+
+    // Dia em que a matrícula deixou de estar ativa (trancada ou cancelada).
+    // As parcelas que vencem a partir dele ficam CANCELADA; as anteriores continuam
+    // sendo dívida. Volta a nulo quando a matrícula é reativada.
+    @Column(name = "data_interrupcao")
+    private LocalDate dataInterrupcao;
 
     // Situação da assinatura: Aguardando Assinatura ou Assinado
     @Column(name = "status_assinatura")
@@ -107,4 +116,9 @@ public class Contrato {
 
     @Column(name = "observacoes", columnDefinition = "TEXT")
     private String observacoes;
+
+    // Versão do modelo de contrato (texto das cláusulas) usada neste contrato.
+    // Só o id, para a listagem de contratos não carregar o texto inteiro.
+    @Column(name = "id_modelo_contrato")
+    private Long idModeloContrato;
 }

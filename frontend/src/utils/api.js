@@ -4,6 +4,9 @@ const api = axios.create({
     baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080', // A URL do Spring Boot
 });
 
+// Recado deixado para a tela de login quando a sessão cai
+export const AVISO_LOGIN = 'flyhigh_aviso_login';
+
 api.interceptors.request.use(async config => {
     // Pega o token do armazenamento do navegador
     // (o typeof window evita quebrar caso o módulo seja carregado no servidor)
@@ -20,12 +23,18 @@ api.interceptors.response.use(
     error => {
         const status = error?.response?.status;
 
-        // Token expirado ou inválido: limpa a sessão e volta para o login,
-        // em vez de deixar a tela em branco com erro 401 em todas as chamadas.
+        // Sessão encerrada (token vencido, conta inativada ou excluída): limpa o token
+        // e volta para o login com um aviso, em vez de mostrar erro em todas as telas.
         if (status === 401 && typeof window !== 'undefined') {
             const estaNoLogin = window.location.pathname.startsWith('/login');
             localStorage.removeItem('flyhigh_token');
-            if (!estaNoLogin) window.location.href = '/login';
+            if (!estaNoLogin) {
+                try {
+                    sessionStorage.setItem(AVISO_LOGIN,
+                        'Sua sessão terminou ou o seu acesso foi desativado. Entre novamente.');
+                } catch { /* sem sessionStorage o login abre sem o aviso */ }
+                window.location.href = '/login';
+            }
         }
         return Promise.reject(error);
     }

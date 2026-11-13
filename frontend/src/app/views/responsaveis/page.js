@@ -3,6 +3,7 @@ import { useState, useEffect, useContext } from 'react';
 import { useFeedback } from '../../../components/feedback';
 import { InputField, SelectField, LinhaCarregando, LinhaVazia } from '../../../components/ui';
 import api, { mensagemErro } from '../../../utils/api';
+import { formatarCpf } from '../../../utils/cpf';
 import { useRouter } from 'next/navigation'; 
 import { AuthContext } from '../../../context/authContext'; 
 
@@ -61,7 +62,7 @@ export default function ResponsaveisPage() {
 
   useEffect(() => { carregarDados(); }, []);
 
-  const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.name === 'cpf' ? formatarCpf(e.target.value) : e.target.value });
   const handleVinculoChange = (e) => setVinculoData({ ...vinculoData, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
@@ -141,7 +142,7 @@ export default function ResponsaveisPage() {
             <InputField label="Nome do Responsável" name="nome" placeholder="Ex: Mary Smith" onChange={handleChange} value={formData.nome} />
             <div className="grid grid-cols-2 gap-4">
               <InputField label="Nascimento" name="dataNascimento" type="date" onChange={handleChange} value={formData.dataNascimento} />
-              <InputField label="CPF" name="cpf" placeholder="000.000.000-00" onChange={handleChange} value={formData.cpf} />
+              <InputField label="CPF" name="cpf" placeholder="000.000.000-00" inputMode="numeric" onChange={handleChange} value={formData.cpf} />
             </div>
             <InputField label="RG" name="rg" placeholder="Identidade" onChange={handleChange} value={formData.rg} />
 
@@ -386,4 +387,4 @@ export default function ResponsaveisPage() {
       </section>
     </div>
   );
-}
+}

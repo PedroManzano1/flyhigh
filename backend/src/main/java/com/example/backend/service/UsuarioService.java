@@ -25,9 +25,10 @@ import java.util.Optional;
 /**
  * Contas de acesso: equipe (criada pela direção) e alunos.
  *
- * O aluno se cadastra sozinho pela tela pública e a conta nasce PENDENTE, sem perfil
- * e sem poder entrar. A secretaria liga a conta a um aluno do cadastro e ela vira
- * ATIVO com o perfil ALUNO, que só enxerga a área do aluno.
+ * O aluno se cadastra sozinho pela tela pública informando o CPF, e o sistema procura
+ * o aluno por ele. A conta nasce PENDENTE, sem perfil e sem poder entrar. A secretaria
+ * liga a conta a um aluno do cadastro e ela vira ATIVO com o perfil ALUNO, que só
+ * enxerga a área do aluno.
  */
 @Service
 public class UsuarioService {
@@ -38,7 +39,8 @@ public class UsuarioService {
 
     public static final String PERFIL_ALUNO = "ALUNO";
 
-    private static final int SENHA_MINIMA = 6;
+    // Vale para toda senha nova ou trocada; as que já existem continuam funcionando
+    public static final int SENHA_MINIMA = 8;
 
     @Autowired
     private UsuarioRepository repository;
@@ -58,6 +60,9 @@ public class UsuarioService {
     @Autowired
     private AlunoRepository alunoRepo;
 
+    @Autowired
+    private ControleAcessoService acesso;
+
     public List<Usuario> listarTodos() {
         return repository.findAll();
     }
@@ -69,16 +74,21 @@ public class UsuarioService {
     // --- Cadastro feito pela direção -----------------------------------------
 
     public Usuario salvar(Usuario usuario) {
+        // Cadastro é sempre uma conta nova: um id vindo no corpo sobrescreveria uma
+        // conta existente (até a de um diretor) sem passar pelas regras da edição
+        usuario.setIdUsuario(null);
         if (usuario.getLogin() == null || usuario.getLogin().isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Informe o login do usuário.");
         }
         if (usuario.getSenha() == null || usuario.getSenha().isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Informe a senha do usuário.");
         }
+        validarSenha(usuario.getSenha());
         usuario.setLogin(usuario.getLogin().trim());
         validarLoginLivre(usuario.getLogin(), null);
 
         Perfil perfil = resolverPerfil(usuario.getPerfil());
+        acesso.exigirPodeAtribuir(perfil);
         usuario.setPerfil(perfil);
         usuario.setAluno(resolverAlunoDaConta(perfil, usuario.getAluno(), null));
 
@@ -93,10 +103,24 @@ public class UsuarioService {
             String login = dadosNovos.getLogin() != null ? dadosNovos.getLogin().trim() : usuario.getLogin();
             validarLoginLivre(login, usuario.getIdUsuario());
 
-            usuario.setNome(dadosNovos.getNome());
+            acesso.exigirDiretorParaContaDeDiretor(usuario);
+
+            if (dadosNovos.getNome() != null) usuario.setNome(dadosNovos.getNome());
             usuario.setLogin(login);
 
             Perfil perfil = resolverPerfil(dadosNovos.getPerfil());
+            if (!mesmoPerfil(usuario.getPerfil(), perfil)) {
+                if (ehUsuarioLogado(usuario) && !acesso.logadoEhDiretor()) {
+                    throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                            "Você não pode trocar o seu próprio perfil. Peça a um diretor.");
+                }
+                acesso.exigirPodeAtribuir(perfil);
+                // Tirar o perfil DIRETOR conta como remover um diretor
+                if (ControleAcessoService.ehPerfilDiretor(usuario.getPerfil())
+                        && !ControleAcessoService.ehPerfilDiretor(perfil)) {
+                    validarUltimoDiretor(usuario);
+                }
+            }
             usuario.setPerfil(perfil);
             usuario.setAluno(resolverAlunoDaConta(perfil, dadosNovos.getAluno(), usuario.getIdUsuario()));
 
@@ -118,6 +142,7 @@ public class UsuarioService {
 
             // Regra: só muda a senha se vier algo no campo
             if (dadosNovos.getSenha() != null && !dadosNovos.getSenha().isEmpty()) {
+                validarSenha(dadosNovos.getSenha());
                 usuario.setSenha(passwordEncoder.encode(dadosNovos.getSenha()));
             }
 
@@ -129,6 +154,7 @@ public class UsuarioService {
     public Usuario alterarStatus(Integer id, String status) {
         Usuario usuario = repository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuário não encontrado."));
+        acesso.exigirDiretorParaContaDeDiretor(usuario);
 
         String novoStatus = normalizarStatus(status);
         if (INATIVO.equals(novoStatus)) {
@@ -155,7 +181,7 @@ public class UsuarioService {
         String nome = limpar(dados.get("nome"));
         String login = limpar(dados.get("login"));
         String senha = dados.get("senha");
-        String matricula = limpar(dados.get("matricula"));
+        String cpf = somenteNumeros(dados.get("cpf"));
 
         if (nome == null || nome.length() < 3) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Informe o seu nome completo.");
@@ -164,18 +190,31 @@ public class UsuarioService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Escolha um login com pelo menos 3 caracteres e sem espaços.");
         }
-        if (senha == null || senha.length() < SENHA_MINIMA) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "A senha precisa ter pelo menos " + SENHA_MINIMA + " caracteres.");
+        validarSenha(senha);
+        if (!cpfValido(cpf)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Informe um CPF válido.");
         }
         validarLoginLivre(login, null);
+
+        if (!repository.findPendentesPorCpf(cpf).isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Já existe um cadastro com este CPF aguardando a liberação da secretaria.");
+        }
+
+        // Procura o aluno pelo CPF; se achar, a secretaria já recebe a matrícula pronta
+        Aluno encontrado = alunoRepo.findByCpfSomenteNumeros(cpf).stream().findFirst().orElse(null);
+        if (encontrado != null && !repository.findByAlunoId(encontrado.getId_aluno()).isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Este CPF já tem uma conta de acesso. Se não lembra o login, procure a secretaria.");
+        }
 
         Usuario usuario = new Usuario();
         usuario.setNome(nome);
         usuario.setLogin(login);
         usuario.setSenha(passwordEncoder.encode(senha));
         usuario.setStatus(PENDENTE);
-        usuario.setMatriculaInformada(matricula);
+        usuario.setCpfInformado(cpf);
+        usuario.setMatriculaInformada(encontrado != null ? encontrado.getNumeroMatricula() : null);
         usuario.setDataCadastro(LocalDateTime.now());
         return repository.save(usuario);
     }
@@ -232,6 +271,7 @@ public class UsuarioService {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Você não pode excluir o seu próprio usuário.");
         }
+        acesso.exigirDiretorParaContaDeDiretor(usuario);
         validarUltimoDiretor(usuario);
 
         long turmas = turmaRepo.contarPorProfessor(id);
@@ -295,6 +335,19 @@ public class UsuarioService {
         });
     }
 
+    public static void validarSenha(String senha) {
+        if (senha == null || senha.length() < SENHA_MINIMA) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "A senha precisa ter pelo menos " + SENHA_MINIMA + " caracteres.");
+        }
+    }
+
+    private static boolean mesmoPerfil(Perfil a, Perfil b) {
+        Integer idA = a != null ? a.getIdPerfil() : null;
+        Integer idB = b != null ? b.getIdPerfil() : null;
+        return java.util.Objects.equals(idA, idB);
+    }
+
     private void validarLoginLivre(String login, Integer idIgnorado) {
         repository.findByLogin(login)
                 .filter(existente -> !existente.getIdUsuario().equals(idIgnorado))
@@ -335,6 +388,24 @@ public class UsuarioService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Status deve ser ATIVO ou INATIVO.");
         }
         return limpo;
+    }
+
+    private static String somenteNumeros(String texto) {
+        return texto == null ? "" : texto.replaceAll("\\D", "");
+    }
+
+    /** Dígitos verificadores do CPF; recusa também sequências repetidas (111.111.111-11). */
+    static boolean cpfValido(String cpf) {
+        if (cpf == null || cpf.length() != 11 || cpf.chars().distinct().count() == 1) return false;
+        for (int posicao = 9; posicao <= 10; posicao++) {
+            int soma = 0;
+            for (int i = 0; i < posicao; i++) {
+                soma += (cpf.charAt(i) - '0') * (posicao + 1 - i);
+            }
+            int digito = (soma * 10) % 11 % 10;
+            if (digito != cpf.charAt(posicao) - '0') return false;
+        }
+        return true;
     }
 
     private String limpar(String texto) {

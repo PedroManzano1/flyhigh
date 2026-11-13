@@ -46,6 +46,12 @@ public class ContratoService {
     @Autowired
     private ResponsavelRepository responsavelRepo;
 
+    @Autowired
+    private ModeloContratoService modeloContratoService;
+
+    @Autowired
+    private ControleAcessoService acesso;
+
     // --- Gravação ------------------------------------------------------------
 
     @Transactional
@@ -69,22 +75,232 @@ public class ContratoService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Turma não encontrada."));
 
         boolean novoContrato = contrato.getIdContrato() == null;
-
-        if (novoContrato) {
-            validarVaga(turmaReal, alunoReal);
-        }
+        Situacao anterior = novoContrato ? null : contratoRepo.findById(contrato.getIdContrato())
+                .map(Situacao::new)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Contrato não encontrado."));
 
         contrato.setAluno(alunoReal);
         contrato.setTurma(turmaReal);
         contrato.setResponsavel(resolverResponsavel(contrato));
 
         aplicarPadroes(contrato, turmaReal);
+        boolean travado = aplicarTravaDeAssinatura(contrato, anterior);
         validarValores(contrato);
+        validarMatricula(contrato, anterior);
+        definirInterrupcao(contrato, anterior);
+        definirModelo(contrato, anterior);
 
         Contrato salvo = contratoRepo.saveAndFlush(contrato);
 
-        gravarParcelas(salvo, form);
+        // Contrato assinado não tem as parcelas regravadas pelo formulário; ajuste
+        // de parcela é feito pela renegociação no Financeiro
+        if (!travado) gravarParcelas(salvo, form);
+        sincronizarParcelas(salvo);
         return salvo;
+    }
+
+    static boolean estaAssinado(Contrato c) {
+        return c.getStatusAssinatura() != null && "ASSINADO".equalsIgnoreCase(c.getStatusAssinatura().trim());
+    }
+
+    /**
+     * Contrato assinado não muda: partes, curso, valores e parcelas voltam ao que
+     * está gravado, e só a situação da matrícula e as observações são aceitas.
+     * Só o diretor pode voltar a assinatura para "Aguardando Assinatura" para corrigir.
+     *
+     * @return true quando o contrato continua assinado (e travado)
+     */
+    private boolean aplicarTravaDeAssinatura(Contrato contrato, Situacao anterior) {
+        if (anterior == null || !anterior.assinado) return false;
+        if (!estaAssinado(contrato)) {
+            if (!acesso.logadoEhDiretor()) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                        "Só o diretor pode voltar um contrato assinado para \"Aguardando Assinatura\".");
+            }
+            return false;
+        }
+        copiarCamposTravados(anterior.travados, contrato);
+        return true;
+    }
+
+    private static void copiarCamposTravados(Contrato de, Contrato para) {
+        para.setAluno(de.getAluno());
+        para.setTurma(de.getTurma());
+        para.setResponsavel(de.getResponsavel());
+        para.setTipoContrato(de.getTipoContrato());
+        para.setNomeConjuge(de.getNomeConjuge());
+        para.setNumeroContrato(de.getNumeroContrato());
+        para.setDataEmissao(de.getDataEmissao());
+        para.setCursoNome(de.getCursoNome());
+        para.setTipoCurso(de.getTipoCurso());
+        para.setDiasSemana(de.getDiasSemana());
+        para.setHorario(de.getHorario());
+        para.setCargaHorariaEstagio(de.getCargaHorariaEstagio());
+        para.setDescontoPercentual(de.getDescontoPercentual());
+        para.setConvenio(de.getConvenio());
+        para.setValorTotalCurso(de.getValorTotalCurso());
+        para.setValorComDesconto(de.getValorComDesconto());
+        para.setDiaVencimentoCurso(de.getDiaVencimentoCurso());
+        para.setValorHoraAula(de.getValorHoraAula());
+        para.setValorTotalMaterial(de.getValorTotalMaterial());
+        para.setDiaVencimentoMaterial(de.getDiaVencimentoMaterial());
+        para.setIdModeloContrato(de.getIdModeloContrato());
+    }
+
+    /**
+     * Retrato do contrato como está no banco, tirado antes do save: o merge do
+     * contrato que veio da tela sobrescreve a entidade gerenciada.
+     */
+    private static class Situacao {
+        final boolean ativo;
+        final Long idTurma;
+        final Long idAluno;
+        final String tipo;
+        final Long idModelo;
+        final LocalDate dataInterrupcao;
+        final boolean assinado;
+        final Contrato travados = new Contrato();
+
+        Situacao(Contrato c) {
+            this.assinado = estaAssinado(c);
+            copiarCamposTravados(c, travados);
+            this.ativo = estaAtivo(c);
+            this.idTurma = c.getTurma() != null ? c.getTurma().getId_turma() : null;
+            this.idAluno = c.getAluno() != null ? c.getAluno().getId_aluno() : null;
+            this.tipo = c.getTipoContrato() == null || c.getTipoContrato().isBlank()
+                    ? Contrato.NORMAL : c.getTipoContrato().trim().toUpperCase();
+            this.idModelo = c.getIdModeloContrato();
+            this.dataInterrupcao = c.getDataInterrupcao();
+        }
+    }
+
+    static boolean estaAtivo(Contrato c) {
+        return c.getStatus() == null || c.getStatus().isBlank() || "ATIVO".equalsIgnoreCase(c.getStatus().trim());
+    }
+
+    static boolean estaConcluido(Contrato c) {
+        String s = c.getStatus() == null ? "" : c.getStatus().trim();
+        return Contrato.CONCLUIDO.equalsIgnoreCase(s) || "CONCLUIDO".equalsIgnoreCase(s);
+    }
+
+    /** Trancado ou cancelado: o caso em que as parcelas futuras deixam de valer. */
+    static boolean estaInterrompido(Contrato c) {
+        return !estaAtivo(c) && !estaConcluido(c);
+    }
+
+    /**
+     * Turma fechada não recebe matrícula, e vaga e matrícula repetida são conferidas
+     * sempre que o contrato passa a ocupar um lugar na turma: contrato novo, troca de
+     * turma ou de aluno, ou matrícula trancada/cancelada que volta a Ativo.
+     */
+    private void validarMatricula(Contrato contrato, Situacao anterior) {
+        if (!estaAtivo(contrato)) return;
+
+        Turma turma = contrato.getTurma();
+        boolean mesmaTurma = anterior != null && turma.getId_turma().equals(anterior.idTurma);
+        boolean mesmoAluno = anterior != null && contrato.getAluno().getId_aluno().equals(anterior.idAluno);
+        boolean jaOcupavaEstaVaga = anterior != null && anterior.ativo && mesmaTurma;
+        if (jaOcupavaEstaVaga && mesmoAluno) return;
+
+        if (!jaOcupavaEstaVaga && TurmaService.naoAceitaMatricula(turma)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "A turma " + turma.getCodigoTurma()
+                    + (TurmaService.estaEncerrada(turma) ? " já foi encerrada" : " está fechada") + " e não aceita matrículas.");
+        }
+
+        Integer idIgnorado = contrato.getIdContrato() != null ? contrato.getIdContrato() : -1;
+        if (contratoRepo.contarOutraMatriculaAtiva(turma.getId_turma(), contrato.getAluno().getId_aluno(), idIgnorado) > 0) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Este aluno já possui matrícula ativa nesta turma.");
+        }
+        // Trocar só o aluno não muda a ocupação da turma
+        if (!jaOcupavaEstaVaga && turma.getLimiteVagas() != null && turma.getLimiteVagas() > 0) {
+            long ocupadas = contratoRepo.contarOutrosAtivosNaTurma(turma.getId_turma(), idIgnorado);
+            if (ocupadas >= turma.getLimiteVagas()) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT,
+                        "Turma sem vagas disponíveis (" + ocupadas + "/" + turma.getLimiteVagas() + ").");
+            }
+        }
+    }
+
+    /** Marca o dia em que a matrícula foi trancada ou cancelada; reativar limpa. */
+    private void definirInterrupcao(Contrato contrato, Situacao anterior) {
+        // Concluído (turma encerrada) não é interrupção: as parcelas continuam valendo
+        if (!estaInterrompido(contrato)) {
+            contrato.setDataInterrupcao(null);
+        } else if (anterior != null && !anterior.ativo && anterior.dataInterrupcao != null) {
+            // Trancado -> Cancelado, ou só uma correção: vale a data da primeira interrupção
+            contrato.setDataInterrupcao(anterior.dataInterrupcao);
+        } else {
+            contrato.setDataInterrupcao(LocalDate.now());
+        }
+    }
+
+    /**
+     * Matrícula trancada ou cancelada: as parcelas em aberto que vencem a partir da
+     * data de interrupção ficam CANCELADA; as que já tinham vencido continuam sendo
+     * cobradas. Matrícula ativa: nenhuma parcela fica cancelada.
+     */
+    private void sincronizarParcelas(Contrato contrato) {
+        LocalDate corte = estaInterrompido(contrato) ? contrato.getDataInterrupcao() : null;
+        List<LancamentoFinanceiro> alteradas = new ArrayList<>();
+        for (LancamentoFinanceiro parcela : lancamentoRepo.findByContratoId(contrato.getIdContrato())) {
+            if (parcela.estaPaga()) continue;
+            boolean cancelar = corte != null && parcela.getDataVencimento() != null
+                    && !parcela.getDataVencimento().isBefore(corte);
+            boolean estavaCancelada = LancamentoFinanceiro.CANCELADA.equalsIgnoreCase(parcela.getStatus());
+            if (cancelar != estavaCancelada) {
+                parcela.setStatus(cancelar ? LancamentoFinanceiro.CANCELADA : LancamentoFinanceiro.PENDENTE);
+                alteradas.add(parcela);
+            }
+        }
+        if (!alteradas.isEmpty()) lancamentoRepo.saveAll(alteradas);
+    }
+
+    /**
+     * Contratos trancados ou cancelados antes desta regra não têm data de interrupção.
+     * Usa o dia da correção: as parcelas futuras saem e as já vencidas continuam.
+     */
+    @Transactional
+    public int corrigirInterrompidosAntigos() {
+        List<Contrato> contratos = contratoRepo.findInterrompidosSemData();
+        for (Contrato c : contratos) {
+            c.setDataInterrupcao(LocalDate.now());
+            contratoRepo.save(c);
+            sincronizarParcelas(c);
+        }
+        return contratos.size();
+    }
+
+    /**
+     * Contrato novo usa a versão vigente do modelo do seu tipo. Na edição a versão
+     * fica como estava (o formulário nem a envia); só muda se o tipo mudar.
+     */
+    private void definirModelo(Contrato contrato, Situacao anterior) {
+        Long idModelo = null;
+        if (anterior != null && anterior.tipo.equals(contrato.getTipoContrato())) {
+            idModelo = anterior.idModelo;
+        }
+        contrato.setIdModeloContrato(idModelo != null ? idModelo : modeloContratoService.idVigente(contrato.getTipoContrato()));
+    }
+
+    /**
+     * Passa um contrato ainda não assinado para a versão vigente do modelo.
+     * Contrato assinado mantém o texto com que foi assinado.
+     */
+    @Transactional
+    public Contrato atualizarModelo(Integer id) {
+        Contrato contrato = contratoRepo.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Contrato não encontrado."));
+        if ("ASSINADO".equalsIgnoreCase(contrato.getStatusAssinatura())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Este contrato já foi assinado e mantém o texto com que foi assinado.");
+        }
+        Long vigente = modeloContratoService.idVigente(contrato.getTipoContrato());
+        if (vigente == null) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Não há modelo publicado para este tipo de contrato.");
+        }
+        contrato.setIdModeloContrato(vigente);
+        return contratoRepo.save(contrato);
     }
 
     /** O contratante precisa ser um responsável já cadastrado (Estória 7). */
@@ -95,20 +311,6 @@ public class ContratoService {
         return responsavelRepo.findById(contrato.getResponsavel().getId_responsavel())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
                         "Responsável financeiro não encontrado."));
-    }
-
-    private void validarVaga(Turma turma, Aluno aluno) {
-        if (contratoRepo.contarMatriculaAtiva(turma.getId_turma(), aluno.getId_aluno()) > 0) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "Este aluno já possui matrícula ativa nesta turma.");
-        }
-        if (turma.getLimiteVagas() != null && turma.getLimiteVagas() > 0) {
-            long ocupadas = contratoRepo.contarAtivosNaTurma(turma.getId_turma());
-            if (ocupadas >= turma.getLimiteVagas()) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT,
-                        "Turma sem vagas disponíveis (" + ocupadas + "/" + turma.getLimiteVagas() + ").");
-            }
-        }
     }
 
     private void aplicarPadroes(Contrato contrato, Turma turma) {
@@ -342,6 +544,10 @@ public class ContratoService {
         Contrato contrato = contratoRepo.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Contrato não encontrado."));
 
+        if (estaAssinado(contrato)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Contrato assinado não pode ser excluído. Cancele a matrícula ou peça ao diretor para voltar a assinatura.");
+        }
         if (lancamentoRepo.contarPagasDoContrato(id) > 0) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Este contrato possui parcelas já pagas e não pode ser excluído. Cancele a matrícula.");

@@ -30,6 +30,7 @@ export default function ContratosPage() {
   const podeEscrever = temPermissao('CONTRATOS_WRITE');
   const podeExcluir = temPermissao('CONTRATOS_DELETE');
   const podeVerFinanceiro = temPermissao('FINANCEIRO_READ');
+  const podeVerModelos = temPermissao('MODELOS_CONTRATO_READ');
 
   const carregar = async () => {
     setLoading(true);
@@ -91,6 +92,14 @@ export default function ContratosPage() {
             className="px-8 py-4 bg-yellow-400 text-zinc-900 rounded-2xl font-black text-sm uppercase tracking-[0.2em] hover:bg-zinc-900 hover:text-white transition-all shadow-xl"
           >
             + Novo Contrato
+          </button>
+        )}
+        {podeVerModelos && (
+          <button
+            onClick={() => router.push('/views/modelos-contrato')}
+            className="px-8 py-4 bg-white text-zinc-900 border-2 border-zinc-200 rounded-2xl font-black text-sm uppercase tracking-[0.2em] hover:bg-zinc-900 hover:text-white transition-all shadow-md"
+          >
+            📝 Texto do contrato
           </button>
         )}
         <button

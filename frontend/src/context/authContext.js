@@ -32,15 +32,25 @@ export function AuthProvider({ children }) {
     useEffect(() => {
         // Ao carregar a página, verifica se já tem alguém logado
         const token = localStorage.getItem('flyhigh_token');
-        if (token) {
-            const dados = lerToken(token);
-            if (dados) {
-                setUser(dados);
-            } else {
-                localStorage.removeItem('flyhigh_token');
-            }
+        const dados = token ? lerToken(token) : null;
+        if (!dados) {
+            if (token) localStorage.removeItem('flyhigh_token');
+            setCarregandoUsuario(false);
+            return;
         }
+        setUser(dados);
         setCarregandoUsuario(false);
+
+        // As permissões do token são as do momento do login; o backend devolve as
+        // atuais, para o menu já refletir um perfil alterado. Conta inativada recebe
+        // 401 e o api.js leva de volta ao login.
+        api.get('/api/auth/eu')
+            .then(res => setUser(atual => atual && ({
+                ...atual,
+                nome: res.data?.nome || atual.nome,
+                permissoes: Array.isArray(res.data?.permissoes) ? res.data.permissoes : atual.permissoes
+            })))
+            .catch(() => { /* sem rede: segue com o que está no token */ });
     }, []);
 
     async function signIn(login, senha) {

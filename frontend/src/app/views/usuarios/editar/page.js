@@ -1,15 +1,18 @@
 "use client";
-import { Suspense, useState, useEffect } from 'react';
+import { Suspense, useState, useEffect, useContext } from 'react';
 import { useFeedback } from '../../../../components/feedback';
 import { InputField, SelectField } from '../../../../components/ui';
 import { useRouter, useSearchParams } from 'next/navigation';
 import api, { mensagemErro } from '../../../../utils/api';
 import { PERFIL_ALUNO } from '../../../../utils/permissoes';
+import { AuthContext } from '../../../../context/authContext';
 
 
 function EditarUsuarioPageConteudo() {
   const router = useRouter();
   const { notificar } = useFeedback();
+  const { user } = useContext(AuthContext);
+  const souDiretor = !!user?.permissoes?.includes('ROLE_DIRETOR');
   const searchParams = useSearchParams();
   const id = searchParams.get('id');
 
@@ -109,13 +112,17 @@ function EditarUsuarioPageConteudo() {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <InputField label="Login de Acesso" name="login" value={formData.login} onChange={e => setFormData({...formData, login: e.target.value})} required className="font-mono" />
-              <InputField label="Nova Senha (Opcional)" name="senha" type="password" placeholder="••••••••" value={formData.senha} onChange={e => setFormData({...formData, senha: e.target.value})} />
+              <InputField label="Nova Senha (Opcional)" name="senha" type="password" placeholder="Mínimo 8 caracteres" minLength={8} value={formData.senha} onChange={e => setFormData({...formData, senha: e.target.value})} />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <SelectField label="Cargo / Perfil" name="idPerfil" value={formData.idPerfil} onChange={e => setFormData({...formData, idPerfil: e.target.value})} required={statusOriginal !== 'PENDENTE'}>
                 <option value="">Selecione o Perfil...</option>
-                {perfis.map(p => <option key={p.idPerfil} value={p.idPerfil}>{p.nomePerfil}</option>)}
+                {/* DIRETOR só aparece para quem já é diretor, ou se já é o perfil desta conta */}
+                {perfis
+                  .filter(p => souDiretor || (p.nomePerfil || '').toUpperCase() !== 'DIRETOR'
+                    || String(p.idPerfil) === String(formData.idPerfil))
+                  .map(p => <option key={p.idPerfil} value={p.idPerfil}>{p.nomePerfil}</option>)}
               </SelectField>
 
               <SelectField label="Situação do Acesso" name="status" value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})} required>

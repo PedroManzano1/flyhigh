@@ -1,7 +1,9 @@
 package com.example.backend.controller;
 
 import com.example.backend.model.Aluno;
+import com.example.backend.model.AtualizacaoAnoEscolar;
 import com.example.backend.service.AlunoService;
+import com.example.backend.service.AnoEscolarService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize; // Importe isso!
@@ -16,6 +18,16 @@ public class AlunoController {
 
     @Autowired
     private AlunoService service;
+
+    @Autowired
+    private AnoEscolarService anoEscolarService;
+
+    // Histórico das viradas automáticas do ano escolar (1º de janeiro)
+    @PreAuthorize("hasRole('DIRETOR') or hasAuthority('ALUNOS_READ')")
+    @GetMapping("/ano-escolar/atualizacoes")
+    public List<AtualizacaoAnoEscolar> atualizacoesDoAnoEscolar() {
+        return anoEscolarService.historico();
+    }
 
     @PreAuthorize("hasRole('DIRETOR') or hasAuthority('ALUNOS_WRITE')")
     @PostMapping
@@ -55,4 +67,4 @@ public class AlunoController {
         }
         return ResponseEntity.notFound().build();
     }
-}
+}

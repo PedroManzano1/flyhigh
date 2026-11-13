@@ -17,6 +17,7 @@ const ROTULO_SITUACAO = {
   APROVADO: 'Aprovado',
   REPROVADO: 'Reprovado',
   CURSANDO: 'Cursando',
+  EM_RISCO: 'Em risco',
   SEM_LANCAMENTOS: 'Sem notas ainda'
 };
 
@@ -67,7 +68,7 @@ function CartaoBoletim({ boletim }) {
             <div className={`rounded-2xl p-5 text-center min-w-[130px] ${
               linha.notaFinal === null || linha.notaFinal === undefined
                 ? 'bg-zinc-100 text-zinc-400'
-                : linha.notaFinal >= notaMinima ? 'bg-emerald-500 text-white' : 'bg-red-600 text-white'
+                : (linha.notaFinalArredondada ?? linha.notaFinal) >= notaMinima ? 'bg-emerald-500 text-white' : 'bg-red-600 text-white'
             }`}>
               <div className="text-[10px] font-black uppercase tracking-widest opacity-80">Nota final</div>
               <div className="text-4xl font-black italic tracking-tighter">
@@ -261,6 +262,16 @@ export default function MinhaAreaPage() {
               ) : (
                 <div className="space-y-8">
                   {area.boletins.map(b => <CartaoBoletim key={b.idTurma} boletim={b} />)}
+                </div>
+              )}
+
+              {/* Turmas encerradas, com o resultado final */}
+              {(area.boletinsConcluidos || []).length > 0 && (
+                <div className="mt-10">
+                  <h3 className="font-black uppercase text-sm tracking-[0.2em] text-zinc-500 mb-4">Cursos concluídos</h3>
+                  <div className="space-y-8">
+                    {area.boletinsConcluidos.map(b => <CartaoBoletim key={b.idTurma} boletim={b} />)}
+                  </div>
                 </div>
               )}
             </section>

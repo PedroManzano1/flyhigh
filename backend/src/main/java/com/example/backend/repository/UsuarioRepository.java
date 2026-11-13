@@ -19,6 +19,9 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Integer> {
     @Query("SELECT u FROM Usuario u WHERE u.aluno.id_aluno = :idAluno")
     List<Usuario> findByAlunoId(@Param("idAluno") Long idAluno);
 
+    @Query("SELECT u FROM Usuario u WHERE u.cpfInformado = :cpf AND UPPER(u.status) = 'PENDENTE'")
+    List<Usuario> findPendentesPorCpf(@Param("cpf") String cpf);
+
     // Impede que o sistema fique sem nenhum diretor ativo
     @Query("SELECT COUNT(u) FROM Usuario u WHERE UPPER(u.perfil.nomePerfil) = 'DIRETOR' "
             + "AND UPPER(u.status) = 'ATIVO' AND u.idUsuario <> :idIgnorado")
